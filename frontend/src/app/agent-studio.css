@@ -1,3 +1,43 @@
 .agent-studio{min-width:0}.studio-intro,.studio-section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:18px}.studio-intro{margin-bottom:27px}.studio-intro h1{margin:0;color:var(--text);font-size:26px;font-weight:600;letter-spacing:-.7px}.studio-intro p,.studio-section-heading p{margin:6px 0 0;color:var(--muted);font-size:12px}.studio-intro .primary{flex:0 0 auto}.studio-section{margin:0 0 30px}.studio-section-heading{align-items:center;margin-bottom:13px}.studio-section-heading h2{margin:0;font-size:14px;font-weight:600}.studio-section-heading p{font-size:10px}.studio-count{flex:0 0 auto;color:var(--subtle);font-size:10px}.studio-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.studio-agent{display:flex;min-width:0;flex-direction:column;padding:16px}.studio-agent-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.studio-agent .agent-symbol.large{display:grid;place-items:center;width:38px;height:38px;flex:0 0 38px;border-radius:10px;background:#a594ff15;color:#b6a8ff}.studio-agent .agent-symbol svg{width:20px;height:20px}.builtin-agent .agent-symbol{background:#ffffff08;color:#aaa5c3}.builtin-badge,.custom-agent-status{padding:4px 8px;border:1px solid #ffffff10;border-radius:20px;color:#9a9cac;font-size:9px;white-space:nowrap}.custom-agent-status.enabled{border-color:#52d2a22a;background:#52d2a20b;color:#6bd7b0}.custom-agent-status.disabled{border-color:#ffffff14;background:#ffffff05;color:#8e92a2}.studio-agent h3{margin:14px 0 5px;color:#e8e5f2;font-size:14px;font-weight:600;overflow-wrap:anywhere}.studio-agent>p{min-height:34px;margin:0 0 14px;color:var(--muted);font-size:10px;line-height:1.6;overflow-wrap:anywhere}.studio-agent .custom-agent-description{min-height:34px}.studio-agent-meta{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid #ffffff09;font-size:9px}.studio-agent-meta span{flex:0 0 66px;color:var(--subtle)}.studio-agent-meta b{color:#c6c8d3;font-weight:500;text-align:right;overflow-wrap:anywhere}.studio-card-footer{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:12px;border-top:1px solid var(--line);color:var(--subtle);font-size:9px}.custom-agent-status+.studio-card-footer{justify-content:flex-end}.studio-action{padding:5px 8px;border:1px solid #ffffff14;border-radius:6px;background:#ffffff05;color:#c4bbeb;font-size:9px}.studio-action:hover:not(:disabled){border-color:#a594ff55;background:#a594ff13;color:#ded6ff}.studio-action:disabled{opacity:.5;cursor:wait}.studio-action.destructive{margin-left:auto;color:#f09ba5}.studio-action.destructive:hover:not(:disabled){border-color:#fb788650;background:#fb788610;color:#ffb0b8}.studio-state{display:flex;min-height:110px;align-items:center;justify-content:center;gap:11px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--muted);font-size:11px}.studio-empty{flex-direction:column;gap:7px;padding:20px;text-align:center}.studio-empty b{color:#c8c7d3;font-size:12px;font-weight:550}.studio-empty p{margin:0;color:var(--subtle);font-size:10px}.studio-empty .agent-symbol{margin-bottom:5px}.studio-notice{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-12px 0 18px;padding:10px 12px;border:1px solid #52d2a229;border-radius:7px;background:#52d2a20a;color:#8adabd;font-size:10px}.studio-notice button{padding:3px 7px;border:0;background:none;color:inherit;font-size:9px;text-decoration:underline}.agent-studio>.notice.error{display:flex;align-items:center;justify-content:space-between;gap:12px}.agent-studio>.notice.error .secondary{flex:0 0 auto}.agent-form-dialog{width:min(680px,calc(100vw - 28px));max-width:none;max-height:min(90vh,900px);padding:0;overflow:auto;border:1px solid #383249;border-radius:13px;background:#11121a;color:var(--text);box-shadow:0 25px 90px #0009}.agent-form-dialog::backdrop{background:#05050be0;backdrop-filter:blur(5px)}.agent-form{padding:23px}.agent-form>header{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:17px}.agent-form>header h2{margin:0;font-size:18px}.studio-dialog-close{width:32px;height:32px;border:1px solid var(--line);border-radius:7px;background:#ffffff06;color:var(--muted);font-size:11px}.agent-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.agent-form-grid label{display:grid;align-content:start;gap:6px;color:#c9c7d5;font-size:10px}.agent-form-grid input:not([type=checkbox]),.agent-form-grid textarea,.agent-form-grid select{width:100%;min-width:0;padding:9px 10px;border:1px solid #323341;border-radius:7px;background:#0b0c13;color:var(--text);font-size:11px}.agent-form-grid textarea{resize:vertical;line-height:1.55}.agent-form-grid .wide-field{grid-column:1/-1}.agent-form-grid .agent-enabled-field{display:flex;align-items:center;gap:8px}.agent-enabled-field input{accent-color:#a594ff}.form-note{margin:14px 0 0;color:var(--subtle);font-size:9px}.agent-form>footer{display:flex;justify-content:flex-end;gap:9px;margin-top:18px;padding-top:15px;border-top:1px solid var(--line)}.agent-form .notice{margin:0 0 14px}.light .studio-agent h3,.light .studio-empty b{color:#303143}.light .studio-agent-meta b{color:#4c4e5e}.light .agent-form-dialog{background:#fff;color:#242637}.light .agent-form-grid label{color:#4b4d5c}.light .agent-form-grid input:not([type=checkbox]),.light .agent-form-grid textarea,.light .agent-form-grid select{border-color:#dfe0e8;background:#fafaff;color:#252637}
 @media(max-width:1100px){.studio-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.studio-intro{align-items:flex-start;flex-direction:column}.studio-intro h1{font-size:22px}.studio-intro .primary{align-self:stretch}.studio-section-heading{align-items:flex-start}.studio-grid{grid-template-columns:1fr}.studio-agent{padding:14px}.agent-form-dialog{max-height:94vh}.agent-form{padding:17px}.agent-form-grid{grid-template-columns:1fr}.agent-form-grid .wide-field{grid-column:auto}.studio-agent-meta span{flex-basis:76px}}
+/* Agent Studio responsive layout fixes */
+
+.agent-studio {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+.studio-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+}
+
+.studio-agent {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.studio-intro {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 1400px) {
+  .studio-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 850px) {
+  .studio-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .studio-intro {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

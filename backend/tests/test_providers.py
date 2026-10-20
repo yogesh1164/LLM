@@ -67,6 +67,35 @@ def test_gemini_stage_execution_is_mocked(monkeypatch: pytest.MonkeyPatch) -> No
     assert calls == [("Research", "Use evidence", "Find evidence", None)]
 
 
+def test_custom_gemini_agent_passes_saved_generation_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    config = Settings(_env_file=None, gemini_api_key=SecretStr("test-only"))
+    recorded = {}
+
+    async def fake_generate(*args, **kwargs):
+        recorded["args"] = args
+        recorded["kwargs"] = kwargs
+        return providers.StageResult("ok", input_tokens=3, output_tokens=2)
+
+    monkeypatch.setattr("app.research.generate_gemini_stage", fake_generate)
+    result = asyncio.run(providers.run_custom_gemini_agent(
+        name="Saved", instructions="Follow the brief", prompt="Do work", model=config.gemini_model,
+        temperature=0.3, max_output_tokens=256, timeout_seconds=12, config=config,
+    ))
+    assert result.final_output == "ok"
+    assert recorded["kwargs"]["model"] == config.gemini_model
+    assert recorded["kwargs"]["temperature"] == 0.3
+    assert recorded["kwargs"]["max_output_tokens"] == 256
+
+
+def test_custom_gemini_agent_rejects_unconfigured_model() -> None:
+    config = Settings(_env_file=None, gemini_api_key=SecretStr("test-only"))
+    with pytest.raises(ProviderConfigurationError, match="saved Gemini model is unsupported"):
+        asyncio.run(providers.run_custom_gemini_agent(
+            name="Saved", instructions="Follow", prompt="Do work", model="gemini-other",
+            temperature=0.2, max_output_tokens=128, timeout_seconds=12, config=config,
+        ))
+
+
 def test_openai_agent_sdk_adapter_is_optional_and_mocked(monkeypatch: pytest.MonkeyPatch) -> None:
     calls = []
 

@@ -18,3 +18,25 @@ frontend/*.tsbuildinfo
 .DS_Store
 *.log
 
+
+# Local backups
+.agents-backup/
+AgentFlow-*-backup-*/
+*.backup
+
+# Python environments and caches
+.venv/
+**/.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+
+# Frontend build files
+node_modules/
+.next/
+
+# Local credentials
+.env
+.env.*
+!.env.example
+

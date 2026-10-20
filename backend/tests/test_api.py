@@ -1,7 +1,11 @@
+import asyncio
+
+import pytest
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
+from starlette.requests import Request
 
-from app import main
+from app import database, main
 
 client = TestClient(main.app, headers={"Authorization": "Bearer " + "t" * 32})
 
@@ -109,4 +113,84 @@ def test_stream_emits_real_stage_events(monkeypatch) -> None:
     assert response.status_code == 200
     assert '"agent": "Research", "status": "running"' in body
     assert '"type": "result"' in body
+
+
+@pytest.mark.parametrize("method,path,body", [
+    ("GET", "/api/dashboard", None),
+    ("GET", "/api/tasks/missing", None),
+    ("DELETE", "/api/tasks/missing", None),
+    ("POST", "/api/workflows/execute", {"task": "x"}),
+    ("POST", "/api/workflows/collaborate", {"task": "x"}),
+    ("POST", "/api/workflows/stream", {"task": "x"}),
+    ("GET", "/api/agents", None),
+    ("GET", "/api/agents/options", None),
+    ("GET", "/api/agents/missing/executions", None),
+    ("GET", "/api/agents/missing", None),
+    ("POST", "/api/agents", {}),
+    ("POST", "/api/agents/missing/execute", {"task": "Run this"}),
+    ("POST", "/api/agents/missing/duplicate", None),
+    ("PATCH", "/api/agents/missing", {}),
+    ("DELETE", "/api/agents/missing", None),
+])
+@pytest.mark.parametrize("authorization", [None, "Bearer invalid-token"])
+def test_all_protected_routes_reject_missing_or_invalid_tokens(method, path, body, authorization):
+    headers = {} if authorization is None else {"Authorization": authorization}
+    response = TestClient(main.app).request(method, path, json=body, headers=headers)
+    assert response.status_code == 401
+    assert response.headers["www-authenticate"] == "Bearer"
+
+
+def test_protected_route_returns_unavailable_when_token_is_not_configured(monkeypatch):
+    monkeypatch.setattr(main.settings, "api_access_token", None)
+    response = TestClient(main.app).get("/api/dashboard")
+    assert response.status_code == 503
+
+
+def test_readiness_is_public_and_reports_database_state(monkeypatch):
+    monkeypatch.setattr(main, "database_ready", lambda: True)
+    response = TestClient(main.app).get("/api/ready")
+    assert response.status_code == 200
+    assert response.json()["status"] == "ready"
+
+    monkeypatch.setattr(main, "database_ready", lambda: False)
+    response = TestClient(main.app).get("/api/ready")
+    assert response.status_code == 503
+
+
+def test_stream_disconnect_cancels_workflow_and_persists_terminal_state(monkeypatch):
+    monkeypatch.setattr(main.settings, "ai_provider", "openai")
+    monkeypatch.setattr(main.settings, "openai_api_key", SecretStr("mock"))
+    entered = asyncio.Event()
+    cancelled = asyncio.Event()
+
+    async def blocked_workflow(task: str, task_id: str, progress=None):
+        database.start_stage(task_id, "Research")
+        entered.set()
+        try:
+            await asyncio.Event().wait()
+        finally:
+            cancelled.set()
+
+    monkeypatch.setattr(main, "run_workflow", blocked_workflow)
+
+    async def disconnect_stream():
+        request = Request({
+            "type": "http", "method": "POST", "path": "/api/workflows/stream",
+            "headers": [], "client": ("test", 1234), "server": ("test", 80),
+            "scheme": "http", "query_string": b"",
+        })
+        response = await main.stream_workflow(
+            main.WorkflowRequest(task="disconnect"), request
+        )
+        stream = response.body_iterator
+        first_event = await anext(stream)
+        assert '"type": "started"' in first_event
+        await asyncio.wait_for(entered.wait(), timeout=1)
+        await stream.aclose()
+        await asyncio.wait_for(cancelled.wait(), timeout=1)
+
+    asyncio.run(disconnect_stream())
+    task = database.dashboard_data()["history"][0]
+    assert task["status"] == "failed"
+    assert task["stages"][0]["status"] == "cancelled"
 

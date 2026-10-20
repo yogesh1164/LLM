@@ -118,6 +118,44 @@ async def run_agent_stage(
     )
 
 
+async def run_custom_gemini_agent(
+    *,
+    name: str,
+    instructions: str,
+    prompt: str,
+    model: str,
+    temperature: float,
+    max_output_tokens: int,
+    timeout_seconds: int,
+    config: Settings = settings,
+    on_retry: Any = None,
+) -> StageResult:
+    """Execute a saved Agent Studio configuration through Gemini only.
+
+    Saved OpenAI configurations remain editable, but are intentionally not executable
+    until their SDK settings and limits have dedicated verification coverage.
+    """
+    if not config.gemini_api_key:
+        raise ProviderConfigurationError("Gemini API key is not configured")
+    if not model.startswith("gemini-") or model != config.gemini_model:
+        raise ProviderConfigurationError("The saved Gemini model is unsupported")
+    if len(prompt) + len(instructions) > config.max_stage_input_chars:
+        raise ProviderConfigurationError("Custom agent input exceeded the configured limit")
+    from app.research import generate_gemini_stage
+
+    return await generate_gemini_stage(
+        name,
+        instructions,
+        prompt,
+        timeout_seconds=timeout_seconds,
+        config=config,
+        on_retry=on_retry,
+        model=model,
+        temperature=temperature,
+        max_output_tokens=max_output_tokens,
+    )
+
+
 def _openai_sources(run: Any) -> list[dict[str, str]]:
     found: dict[str, dict[str, str]] = {}
     for response in getattr(run, "raw_responses", []):

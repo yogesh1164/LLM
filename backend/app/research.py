@@ -1,11 +1,14 @@
 """Gemini direct SDK calls and native Google Search grounding extraction."""
 
 import asyncio
+import logging
 import random
 import time
 from typing import Any
 
 from app.config import Settings, settings
+
+logger = logging.getLogger(__name__)
 
 
 def extract_grounding_sources(response: object) -> list[dict[str, str]]:
@@ -45,6 +48,9 @@ async def generate_gemini_stage(
     timeout_seconds: int | None = None,
     config: Settings = settings,
     on_retry: Any = None,
+    model: str | None = None,
+    temperature: float | None = None,
+    max_output_tokens: int | None = None,
 ) -> Any:
     """Run one Gemini stage using google-genai; ground Research only when opted in."""
     if not config.gemini_api_key:
@@ -54,21 +60,38 @@ async def generate_gemini_stage(
 
     def generate(timeout: float) -> tuple[str, int, int, list[dict[str, str]]]:
         from google import genai
+
         client = genai.Client(
             api_key=config.gemini_api_key.get_secret_value(),
-            http_options={"timeout": max(1, int(timeout * 1000)),
-                          "retry_options": {"attempts": 1}},
+            http_options={
+                "timeout": max(1, int(timeout * 1000)),
+                "retry_options": {"attempts": 1},
+            },
         )
         tools = None
         if stage_name.lower() == "research" and config.gemini_search_grounding_enabled:
             tools = [{"type": "google_search"}]
         try:
-            response = client.interactions.create(
-                model=config.gemini_model,
-                input=prompt,
-                system_instruction=instructions,
-                tools=tools,
-            )
+            request_options: dict[str, Any] = {
+                "model": model or config.gemini_model,
+                "input": prompt,
+                "system_instruction": instructions,
+                "tools": tools,
+            }
+            if temperature is not None or max_output_tokens is not None:
+                request_options["generation_config"] = {
+                    **({"temperature": temperature} if temperature is not None else {}),
+                    **({"max_output_tokens": max_output_tokens} if max_output_tokens is not None else {}),
+                }
+            api_started = time.monotonic()
+            try:
+                response = client.interactions.create(**request_options)
+            finally:
+                logger.info(
+                    "Gemini SDK request finished: stage=%s duration_seconds=%.2f",
+                    stage_name,
+                    time.monotonic() - api_started,
+                )
         finally:
             client.close()
         usage = getattr(response, "usage", None)
@@ -84,6 +107,7 @@ async def generate_gemini_stage(
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             raise TimeoutError("Gemini request exceeded the remaining stage timeout")
+        logger.info("Gemini request attempt: stage=%s attempt=%d", stage_name, attempt + 1)
         try:
             output, input_tokens, output_tokens, sources = await asyncio.wait_for(
                 asyncio.to_thread(generate, remaining), timeout=remaining
@@ -121,6 +145,10 @@ async def generate_gemini_stage(
             if on_retry:
                 await on_retry({"attempt": attempt, "max_attempts": config.provider_retry_attempts,
                                 "delay_seconds": round(delay, 2), "status_code": status})
+            logger.warning(
+                "Gemini transient error: stage=%s status=%s retry=%d delay_seconds=%.2f",
+                stage_name, status, attempt, delay,
+            )
             await asyncio.sleep(delay)
     from app.providers import StageResult
 

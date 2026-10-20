@@ -1,5 +1,9 @@
-"""CRUD API for Agent Studio configuration; never used by workflow execution."""
+"""CRUD and isolated execution API for Agent Studio custom agents."""
 
+import asyncio
+import math
+import time
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
@@ -8,15 +12,19 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
 from app import database
+from app.config import settings
 from app.custom_agent_schemas import (
     AgentConfigCreate,
     AgentConfigPatch,
     AgentConfigRead,
     AgentOptionsResponse,
+    CustomAgentExecutionRead,
+    CustomAgentExecutionRequest,
     ProviderOption,
     configured_models,
 )
-from app.database import CustomAgent
+from app.database import CustomAgent, CustomAgentExecution
+from app.providers import ProviderConfigurationError, ProviderRequestError, run_custom_gemini_agent
 
 router = APIRouter(prefix="/api/agents", tags=["agent-studio"])
 BUILT_IN_NAMES = {"orchestrator", "research", "analysis", "report", "review"}
@@ -57,12 +65,141 @@ def _read(agent: CustomAgent) -> AgentConfigRead:
     return AgentConfigRead.model_validate(agent)
 
 
+def _read_execution(execution: CustomAgentExecution) -> CustomAgentExecutionRead:
+    return CustomAgentExecutionRead.model_validate(execution)
+
+
+def _start_execution(agent: CustomAgent, task: str) -> UUID:
+    with database.SessionLocal.begin() as session:
+        execution = CustomAgentExecution(
+            agent_id=agent.id,
+            task=task,
+            status="running",
+            provider=agent.provider,
+            model=agent.model,
+        )
+        session.add(execution)
+        session.flush()
+        return execution.id
+
+
+def _finish_execution(execution_id: UUID, *, status_value: str, elapsed_ms: int,
+                      result: str | None = None, error: str | None = None,
+                      input_tokens: int | None = None, output_tokens: int | None = None) -> CustomAgentExecutionRead:
+    with database.SessionLocal.begin() as session:
+        execution = session.get(CustomAgentExecution, execution_id)
+        if execution is None:
+            raise RuntimeError("Custom agent execution record was not found")
+        execution.status = status_value
+        execution.elapsed_ms = elapsed_ms
+        execution.completed_at = datetime.now(UTC)
+        execution.result = result
+        execution.error = error
+        execution.input_tokens = input_tokens
+        execution.output_tokens = output_tokens
+        session.flush()
+        return _read_execution(execution)
+
+
+async def _execute_saved_agent(agent: CustomAgent, task: str) -> CustomAgentExecutionRead:
+    try:
+        validated = AgentConfigCreate.model_validate({
+            field: getattr(agent, field) for field in AgentConfigCreate.model_fields
+        })
+    except ValidationError as exc:
+        message = "; ".join(error["msg"] for error in exc.errors())
+        raise HTTPException(status_code=422, detail=f"Saved agent configuration is invalid: {message}") from None
+    if not validated.enabled:
+        raise HTTPException(status_code=409, detail="This custom agent is disabled")
+    if validated.provider != "gemini":
+        raise HTTPException(
+            status_code=422,
+            detail="Custom agent execution currently supports Gemini configurations only",
+        )
+    estimated_input_tokens = math.ceil((len(task) + len(validated.system_instructions)) / 4)
+    if estimated_input_tokens > settings.custom_agent_max_input_tokens:
+        raise HTTPException(status_code=422, detail="Custom agent input exceeds the configured token limit")
+
+    execution_id = _start_execution(agent, task)
+    started = time.monotonic()
+    try:
+        result = await asyncio.wait_for(
+            run_custom_gemini_agent(
+                name=validated.name,
+                instructions=validated.system_instructions,
+                prompt=task,
+                model=validated.model,
+                temperature=validated.temperature,
+                max_output_tokens=validated.max_output_tokens,
+                timeout_seconds=settings.custom_agent_timeout_seconds,
+                config=settings,
+            ),
+            timeout=settings.custom_agent_timeout_seconds,
+        )
+        elapsed_ms = int((time.monotonic() - started) * 1000)
+        if result.output_tokens > validated.max_output_tokens:
+            message = "Provider output exceeded the saved output-token limit"
+            _finish_execution(execution_id, status_value="failed", elapsed_ms=elapsed_ms, error=message,
+                              input_tokens=result.input_tokens, output_tokens=result.output_tokens)
+            raise HTTPException(status_code=502, detail=message)
+        return _finish_execution(
+            execution_id,
+            status_value="completed",
+            elapsed_ms=elapsed_ms,
+            result=result.final_output[:settings.max_stage_output_chars],
+            input_tokens=result.input_tokens,
+            output_tokens=result.output_tokens,
+        )
+    except HTTPException:
+        raise
+    except TimeoutError:
+        elapsed_ms = int((time.monotonic() - started) * 1000)
+        message = f"Custom agent exceeded its {settings.custom_agent_timeout_seconds}s timeout"
+        _finish_execution(execution_id, status_value="timed_out", elapsed_ms=elapsed_ms, error=message)
+        raise HTTPException(status_code=504, detail=message) from None
+    except ProviderConfigurationError as exc:
+        elapsed_ms = int((time.monotonic() - started) * 1000)
+        message = str(exc)
+        _finish_execution(execution_id, status_value="failed", elapsed_ms=elapsed_ms, error=message)
+        raise HTTPException(status_code=503, detail=message) from None
+    except ProviderRequestError:
+        elapsed_ms = int((time.monotonic() - started) * 1000)
+        message = "Gemini request failed. Check provider availability and try again."
+        _finish_execution(execution_id, status_value="failed", elapsed_ms=elapsed_ms, error=message)
+        raise HTTPException(status_code=502, detail=message) from None
+    except Exception:  # noqa: BLE001 - provider implementations can raise SDK-specific errors.
+        elapsed_ms = int((time.monotonic() - started) * 1000)
+        message = "Custom agent execution failed. Check the saved configuration and try again."
+        _finish_execution(execution_id, status_value="failed", elapsed_ms=elapsed_ms, error=message)
+        raise HTTPException(status_code=502, detail=message) from None
+
+
 @router.get("/options", response_model=AgentOptionsResponse)
 def agent_options() -> AgentOptionsResponse:
     return AgentOptionsResponse(providers=[
         ProviderOption(provider="gemini", models=configured_models("gemini")),
         ProviderOption(provider="openai", models=configured_models("openai")),
     ])
+
+
+@router.get("/{agent_id}/executions", response_model=list[CustomAgentExecutionRead])
+def list_agent_executions(agent_id: str) -> list[CustomAgentExecutionRead]:
+    with database.SessionLocal() as session:
+        agent = _get_agent(session, agent_id)
+        executions = session.scalars(
+            select(CustomAgentExecution)
+            .where(CustomAgentExecution.agent_id == agent.id)
+            .order_by(CustomAgentExecution.created_at.desc())
+            .limit(50)
+        ).all()
+        return [_read_execution(execution) for execution in executions]
+
+
+@router.post("/{agent_id}/execute", response_model=CustomAgentExecutionRead)
+async def execute_agent(agent_id: str, request: CustomAgentExecutionRequest) -> CustomAgentExecutionRead:
+    with database.SessionLocal() as session:
+        agent = _get_agent(session, agent_id)
+    return await _execute_saved_agent(agent, request.task)
 
 
 @router.get("", response_model=list[AgentConfigRead])

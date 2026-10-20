@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { AppIcon } from "./AppIcon";
 import { apiFetch } from "./api";
 import "./agent-studio.css";
+import { CustomAgentRunner } from "./CustomAgentRunner";
 
 type Provider = "gemini" | "openai";
 type Agent = {
@@ -75,6 +76,7 @@ export function AgentStudio() {
   const [form, setForm] = useState<AgentForm>(() => emptyForm(null));
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [runAgent, setRunAgent] = useState<Agent | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   const load = useCallback(async () => {
@@ -204,7 +206,7 @@ export function AgentStudio() {
     <section className="agent-studio" aria-labelledby="agent-studio-title">
       <div className="studio-intro">
         <div><div className="eyebrow">YOUR SPECIALIST TEAM</div><h1 id="agent-studio-title">Agent Studio</h1>
-          <p>Create and manage saved agent configurations. Custom agents are not part of workflow execution yet.</p></div>
+          <p>Create, manage, and run custom agents individually. Custom agents are not part of the built-in workflow yet.</p></div>
         <button className="primary" type="button" onClick={startCreate} disabled={!options}>
           <AppIcon name="plus" /> Create agent
         </button>
@@ -229,7 +231,7 @@ export function AgentStudio() {
 
       <section className="studio-section" aria-labelledby="custom-agents-title">
         <div className="studio-section-heading"><div><h2 id="custom-agents-title">Custom agents</h2>
-          <p>Saved in the database and ready for future workflow assignment.</p></div>
+          <p>Saved in the database. Enabled Gemini agents can be run independently.</p></div>
           {!loading && <span className="studio-count">{agents.length} {agents.length === 1 ? "agent" : "agents"}</span>}</div>
         {loading ? <div className="studio-state" role="status"><span className="spinner" /> Loading custom agents…</div>
           : agents.length ? <div className="studio-grid">
@@ -241,6 +243,7 @@ export function AgentStudio() {
               <div className="studio-agent-meta"><span>Provider</span><b>{agent.provider} · {agent.model}</b></div>
               <div className="studio-agent-meta"><span>Settings</span><b>Temperature {agent.temperature} · {agent.max_output_tokens.toLocaleString()} tokens</b></div>
               <div className="studio-card-footer">
+                <button type="button" className="studio-action" disabled={!agent.enabled || agent.provider !== "gemini" || busyId === agent.id} onClick={() => setRunAgent(agent)}>Run Agent</button>
                 <button type="button" className="studio-action" onClick={() => startEdit(agent)}>Edit</button>
                 <button type="button" className="studio-action" disabled={busyId === agent.id} onClick={() => void duplicateAgent(agent)}>{busyId === agent.id ? "Working…" : "Duplicate"}</button>
                 <button type="button" className="studio-action" disabled={busyId === agent.id} onClick={() => void toggleAgent(agent)}>{agent.enabled ? "Disable" : "Enable"}</button>
@@ -274,11 +277,12 @@ export function AgentStudio() {
             <label>Maximum output tokens<input type="number" min="1" max="32768" step="1" required value={form.max_output_tokens} onChange={(event) => setForm({ ...form, max_output_tokens: Number(event.target.value) })} /></label>
             <label className="agent-enabled-field"><input type="checkbox" checked={form.enabled} onChange={(event) => setForm({ ...form, enabled: event.target.checked })} /> Enabled</label>
           </div>
-          <p className="form-note">This saves configuration only. It does not change or join the five-agent workflow.</p>
+          <p className="form-note">Agent settings are saved here. Run enabled Gemini agents independently; the five-agent workflow stays unchanged.</p>
           <footer><button className="secondary" type="button" onClick={() => setFormTarget(null)}>Cancel</button>
             <button className="primary" type="submit" disabled={saving}>{saving ? "Saving…" : editing ? "Save changes" : "Create agent"}</button></footer>
         </form>
       </dialog>
+      {runAgent && <CustomAgentRunner agent={runAgent} onClose={() => setRunAgent(null)} />}
     </section>
   );
 }

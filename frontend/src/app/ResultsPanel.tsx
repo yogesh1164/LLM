@@ -172,7 +172,7 @@ function safeMarkdownUrl(url: string) {
   return "";
 }
 
-function MarkdownContent({ source }: { source: string }) {
+export function MarkdownContent({ source }: { source: string }) {
   return (
     <div className="markdown-content">
       <ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml urlTransform={safeMarkdownUrl} components={markdownComponents}>

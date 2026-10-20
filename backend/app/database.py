@@ -83,6 +83,90 @@ class CustomAgent(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False,
                                                   default=lambda: datetime.now(UTC),
                                                   onupdate=lambda: datetime.now(UTC))
+    executions: Mapped[list["CustomAgentExecution"]] = relationship(
+        back_populates="agent", cascade="all, delete-orphan"
+    )
+
+
+class CustomAgentExecution(Base):
+    """A persisted, non-workflow run of a saved Agent Studio configuration."""
+
+    __tablename__ = "custom_agent_executions"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    agent_id: Mapped[UUID] = mapped_column(ForeignKey("custom_agents.id", ondelete="CASCADE"), index=True)
+    task: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="running", index=True)
+    provider: Mapped[str] = mapped_column(String(20), nullable=False)
+    model: Mapped[str] = mapped_column(String(120), nullable=False)
+    result: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    input_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    output_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    elapsed_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False,
+                                                   default=lambda: datetime.now(UTC))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    agent: Mapped[CustomAgent] = relationship(back_populates="executions")
+
+
+class CustomWorkflow(Base):
+    """An ordered definition of saved custom-agent steps."""
+
+    __tablename__ = "custom_workflows"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    enabled: Mapped[bool] = mapped_column(nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    steps: Mapped[list["CustomWorkflowStep"]] = relationship(back_populates="workflow", cascade="all, delete-orphan", order_by="CustomWorkflowStep.position")
+    runs: Mapped[list["CustomWorkflowRun"]] = relationship(back_populates="workflow", passive_deletes=True)
+
+
+class CustomWorkflowStep(Base):
+    __tablename__ = "custom_workflow_steps"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    workflow_id: Mapped[UUID] = mapped_column(ForeignKey("custom_workflows.id", ondelete="CASCADE"), nullable=False, index=True)
+    agent_id: Mapped[UUID] = mapped_column(ForeignKey("custom_agents.id", ondelete="RESTRICT"), nullable=False)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    workflow: Mapped[CustomWorkflow] = relationship(back_populates="steps")
+
+
+class CustomWorkflowRun(Base):
+    __tablename__ = "custom_workflow_runs"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    workflow_id: Mapped[UUID | None] = mapped_column(ForeignKey("custom_workflows.id", ondelete="SET NULL"), nullable=True, index=True)
+    workflow_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    task: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="running")
+    result: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    workflow: Mapped[CustomWorkflow | None] = relationship(back_populates="runs")
+    steps: Mapped[list["CustomWorkflowStepRun"]] = relationship(back_populates="run", cascade="all, delete-orphan", order_by="CustomWorkflowStepRun.position")
+
+
+class CustomWorkflowStepRun(Base):
+    __tablename__ = "custom_workflow_step_runs"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    run_id: Mapped[UUID] = mapped_column(ForeignKey("custom_workflow_runs.id", ondelete="CASCADE"), nullable=False, index=True)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    agent_name: Mapped[str] = mapped_column(String(80), nullable=False)
+    provider: Mapped[str] = mapped_column(String(20), nullable=False)
+    model: Mapped[str] = mapped_column(String(120), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+    output: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    input_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    output_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    elapsed_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    run: Mapped[CustomWorkflowRun] = relationship(back_populates="steps")
 
 
 engine = create_engine(settings.database_url, pool_pre_ping=True)

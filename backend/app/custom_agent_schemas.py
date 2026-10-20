@@ -82,3 +82,33 @@ class ProviderOption(BaseModel):
 
 class AgentOptionsResponse(BaseModel):
     providers: list[ProviderOption]
+
+
+class CustomAgentExecutionRequest(BaseModel):
+    task: str = Field(min_length=3, max_length=10_000)
+
+    @field_validator("task")
+    @classmethod
+    def strip_task(cls, value: str) -> str:
+        value = value.strip()
+        if len(value) < 3:
+            raise ValueError("Task must contain at least 3 characters")
+        return value
+
+
+class CustomAgentExecutionRead(BaseModel):
+    id: UUID
+    agent_id: UUID
+    task: str
+    status: str
+    provider: str
+    model: str
+    result: str | None = None
+    error: str | None = None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    elapsed_ms: int | None = None
+    created_at: datetime
+    completed_at: datetime | None = None
+
+    model_config = ConfigDict(from_attributes=True)

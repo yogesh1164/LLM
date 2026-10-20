@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     analysis_timeout_seconds: int | None = Field(default=None, ge=5, le=600)
     report_timeout_seconds: int | None = Field(default=None, ge=5, le=600)
     review_timeout_seconds: int = Field(default=180, ge=5, le=600)
+    custom_agent_timeout_seconds: int = Field(default=90, ge=5, le=300)
+    custom_agent_max_input_tokens: int = Field(default=8_000, ge=256, le=100_000)
     max_stage_output_chars: int = Field(default=12_000, ge=500, le=100_000)
     max_stage_input_chars: int = Field(default=40_000, ge=1_000, le=200_000)
     max_model_calls_per_workflow: int = Field(default=5, ge=5, le=20)

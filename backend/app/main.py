@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.config import settings
 from app.custom_agents import router as custom_agents_router
+from app.custom_workflows import router as custom_workflows_router
 from app.database import (
     create_task,
     dashboard_data,
@@ -35,6 +36,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 logger = logging.getLogger("agentflow.api")
 app = FastAPI(title="AgentFlow AI API", version="0.2.0")
 app.include_router(custom_agents_router)
+app.include_router(custom_workflows_router)
 _rate_events: dict[str, deque[float]] = defaultdict(deque)
 _rate_limit_lock = threading.Lock()
 

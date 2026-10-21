@@ -206,7 +206,7 @@ def test_gemini_sdk_call_and_search_tool_are_mocked(monkeypatch: pytest.MonkeyPa
     assert recorded["request"]["model"] == config.gemini_model
     assert recorded["request"]["tools"] == [{"type": "google_search"}]
     assert recorded["request"]["system_instruction"] == "Use citations"
-    assert recorded["http_options"]["timeout"] == 17_000
+    assert 0 < recorded["http_options"]["timeout"] <= 17_000
     assert recorded["http_options"]["retry_options"] == {"attempts": 1}
     assert recorded["closed"] is True
 

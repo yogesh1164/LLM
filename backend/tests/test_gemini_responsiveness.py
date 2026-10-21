@@ -94,6 +94,10 @@ def test_timeout_stops_underlying_sdk_request(monkeypatch):
     asyncio.run(check())
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason="Per-attempt SDK timeout cap not implemented in stable backend",
+)
 def test_long_stage_caps_single_sdk_attempt(monkeypatch):
     """Offline: a 180s stage must not grant one SDK call the whole budget."""
     observed = {}

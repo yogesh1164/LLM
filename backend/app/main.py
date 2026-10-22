@@ -73,6 +73,16 @@ async def require_api_token(request: Request, call_next):
         if not provided.startswith("Bearer ") or not hmac.compare_digest(provided[7:], expected):
             return JSONResponse({"detail": "Authentication required"}, status_code=401,
                                 headers={"WWW-Authenticate": "Bearer"})
+    if request.method == "POST" and (
+        request.url.path.startswith("/api/agents/")
+        and request.url.path.endswith("/execute")
+        or request.url.path.startswith("/api/custom-workflows/")
+        and request.url.path.endswith("/execute")
+    ):
+        try:
+            await _check_rate_limit(request)
+        except HTTPException as exc:
+            return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
     return await call_next(request)
 
 

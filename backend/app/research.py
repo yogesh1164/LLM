@@ -110,7 +110,7 @@ async def generate_gemini_stage(
         logger.info("Gemini request attempt: stage=%s attempt=%d", stage_name, attempt + 1)
         try:
             output, input_tokens, output_tokens, sources = await asyncio.wait_for(
-                asyncio.to_thread(generate, remaining), timeout=remaining
+                asyncio.to_thread(generate, min(remaining, 45)), timeout=remaining
             )
             break
         except TimeoutError:

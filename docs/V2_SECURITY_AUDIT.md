@@ -1,0 +1,79 @@
+# V2 security audit
+
+Audit date: 2026-10-23. Starting revision: `6bd5b32` (merged private MVP).
+`main` was clean, fetched, and 0 commits ahead/behind `origin/main` before creating
+`feature/v2-production-hardening`. No live schema, credential or volume changes.
+This is a source/configuration audit and offline verification, not a penetration
+test or certification of multi-user readiness. V1 runtime evidence in DEPLOYMENT.md
+is historical; it does not validate the new feature branch.
+
+## Prioritized findings
+
+| Severity | Evidence | Risk and disposition |
+|---|---|---|
+| Critical for multi-user use | `backend/app/main.py:require_api_token`; `backend/app/database.py:Task`, `CustomAgent`, `CustomWorkflow`, runs | Every bearer holder can read/change/delete all data. No users, roles or ownership. Remains a single-user deployment. Account/ownership cutover is approval-gated; see V2_ARCHITECTURE.md. |
+| Critical dependency advisory | Installed `certifi==2026.7.22`; backend manifest lacked a security floor | Compromised CA chain can enable TLS interception by an on-path attacker. Fixed manifest to `certifi>=2026.10.19`, local environment now 2026.10.23; runtime image must be inspected/released separately. [GHSA-6q48-6c7w-9gw2](https://github.com/advisories/GHSA-6q48-6c7w-9gw2). |
+| High | `compose.production.yml:x-backend` / `postgres.environment` | Same `agentflow` bootstrap role for migrations and runtime; previously verified superuser. Keep private. Separate NOLOGIN owner, migration login and runtime DML role before wider access. No live role changes authorized. |
+| High | `backend/app/research.py:generate_gemini_stage` | Coroutine timeout cannot stop the synchronous SDK worker. Added process-local admission guard (default 4) retaining capacity until the actual worker exits; saturated attempts fail without new SDK calls. Cancellation XFAIL remains. Multiple processes still multiply capacity. |
+| High | `backend/app/database.py`; execution routers | No idempotency keys or durable worker leases; a crash can leave running records and retry can duplicate billable work. No automatic replay or startup bulk status edits added. Persistent lease/idempotency design needs reviewed schema migration. |
+| Medium | `frontend/src/app/api.ts`; `page.tsx` | Shared bearer in sessionStorage readable by same-origin JavaScript; no per-user revocation, expiration or audit identity. Inactive cookie primitives are not a deployed login system. |
+| Medium | `backend/app/main.py:_check_rate_limit`; Docker Uvicorn command | Per-process IP limit aggregates all users behind Caddy. Forwarded headers are deliberately untrusted. No global or per-user budget across replicas. Keep one worker/replica; do not enable arbitrary proxy headers. |
+| Medium | `backend/app/custom_agents.py:_execute_saved_agent` | Cancelled requests left execution `running`; now cancellation persists terminal status and re-raises, offline tested. Process crashes are a separate unresolved case. |
+| Medium | `backend/app/main.py` logging; SDK loggers | Free-form SDK logs can include raw URLs/errors/private content. Production formatter now permits only structured numeric metrics, generated UUIDs, registered route templates and fixed categories; discards raw messages, exception text and unknown fields. External process/server startup logs still need operational review. |
+| Medium | `frontend/src/app/ResultsPanel.tsx` | Model Markdown could load external images, leaking client address/referrer or contacting internal browser-reachable hosts. Images now render as text; citations use existing safe URL filter. Raw HTML remains disabled. |
+| Medium | `backend/app/agents.py`, `workflow.py`, `custom_workflows.py` | User tasks, search material and preceding model outputs are untrusted context. Prompt instructions are not authorization. No arbitrary shell/SQL tool is exposed; grounding is explicit opt-in. Model output must not trigger privileged actions. Injection-resistant correctness is not guaranteed. |
+| Medium | Dockerfiles, Python dependencies, Compose image tags | V2 app base images are now digest pinned; runtime versions are constrained from the tested Linux image. Gemini remains 2.31.0. Constraints are not hash-verified; build tools and Compose infrastructure tags remain follow-ups. |
+| High, unresolved | V2 review image Docker Scout reports | Backend: 9 high advisories across 4 Debian packages. Frontend: initially 18 across 10 packages; removing unused runtime npm/Corepack/Yarn reduced this to 8 across 3 Debian packages. Remaining findings report no fixed version. No suppressions added; image security gate remains a release blocker pending vendor/reachability triage. |
+| Medium | `DEPLOYMENT.md` backup procedure | Verified local recovery does not supply encrypted off-host retention, automated schedules or measured RPO/RTO. Dumps contain private content. Operator-selected destination/key custody required; no upload/schedule configured. |
+| Moderate dependency advisory | Installed pytest 8.4.2, old `<9` constraint | UNIX temporary-directory issue; changed development constraint to >=9.0.3,<10; tested 9.1.1. Not a runtime dependency. [GHSA-6w46-j5rx-g56g](https://github.com/advisories/GHSA-6w46-j5rx-g56g). |
+| Low/operational | Caddy internal CA, local bind; `deploy/Caddyfile` | Private root trust must be explicit per device. Listener remains loopback-only. No automatic Windows trust-store changes. No remote client/private DNS verification in this phase. |
+
+## Route and data boundary inventory
+
+All `/api/*` routes except health/ready use the global bearer middleware. CORS
+preflights are handled outside it; this does not authorize a subsequent mutation.
+The route inventory test expands FastAPI's included routers and verifies both
+missing and invalid bearer rejection for every documented sensitive route/method.
+
+| Surface | Operations | Data model / current boundary |
+|---|---|---|
+| `/api/health`, `/api/ready` | GET | Public minimal status; readiness executes DB probe, no environment dump |
+| `/api/dashboard` | GET | Task history/counts/usage; shared workspace |
+| `/api/tasks/{task_id}` | GET, DELETE | Tasks and stage outputs; deletion cascades |
+| `/api/workflows/{collaborate,execute,stream}` | POST | Original five-stage execution; start rate limited, timeout bounded |
+| `/api/agents`, `/{agent_id}` | GET, POST, PATCH, DELETE | CustomAgent; global case-insensitive name uniqueness |
+| `/api/agents/options`, `/{agent_id}/duplicate` | GET / POST | Configured models, copy definition; builtin identifiers protected |
+| `/api/agents/{agent_id}/execute`, `/executions` | POST / GET | CustomAgentExecution; rate limited, provider/model validation |
+| `/api/custom-workflows`, `/{workflow_id}` | GET, POST, PUT, DELETE | Workflow definitions and ordered steps; referenced agents checked |
+| `/api/custom-workflows/{workflow_id}/execute`, `/runs` | POST / GET | Persistent run and step snapshots; partial outputs preserved |
+| `/api/custom-workflows/runs/{run_id}` | GET | Historical run even if definition deleted; needs its own owner |
+| Reports / Knowledge Base | UI only | Reports derive from task output; no separate knowledge-base table/API found |
+
+SQLAlchemy queries bind values; the inspected `text()` uses are static readiness
+and index expressions, not concatenated request SQL. UUIDs, lengths, provider/model
+allowlists and field ranges constrain inputs. List endpoints and request-body
+transport size lack comprehensive resource budgets; pagination/body limits remain
+before broader access. Model-call limits count stages; retries add upstream calls.
+
+Production docs are disabled in FastAPI and blocked by Caddy. Explicit HTTPS CORS
+origins are validated; credentialed CORS is off in bearer mode. API responses now
+also have no-store at the application layer. Postgres/backend/frontend ports are
+not published. App containers run non-root and drop capabilities; PostgreSQL and
+Caddy image defaults need separate least-privilege validation before changes.
+
+## Scan scope and interpretation
+
+`npm audit` on the current lockfile found zero vulnerabilities. Initial Python
+audit found two unique advisories across certifi and pytest (pytest was duplicated
+in tool output). Follow-up scan found zero known vulnerabilities after local fixes;
+editable local `agentflow-api` is intentionally excluded from package advisory lookup.
+Advisories change over time. These checks do not scan OS packages or prove absence
+of vulnerabilities. CI includes image scanning and full-history redacted secret
+scanning; remotely executed Actions results must not be claimed before a push.
+
+No secrets should appear in committed reports. `.env`, `.env.production`, backups,
+certificates, private keys and dumps remain excluded. CI uses disposable fake
+values, no production secrets, no `pull_request_target`, no self-hosted runners,
+no image push and no deployment. Action refs are immutable SHA pins verified from
+upstream tags; Gitleaks, Hadolint and actionlint tooling images are digest pinned.
+The Grype action's downloaded scanner and build tooling still need stricter version management.

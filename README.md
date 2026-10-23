@@ -1,5 +1,10 @@
 # AgentFlow AI
 
+V2 engineering is staged on `feature/v2-production-hardening`. See the
+[security audit](docs/V2_SECURITY_AUDIT.md) and
+[account/ownership migration design](docs/V2_ARCHITECTURE.md).
+Multi-user accounts are not enabled by this foundation.
+
 For the separate private deployment stack, audit findings, security boundaries,
 backup/restore procedures, and verification commands, see [DEPLOYMENT.md](DEPLOYMENT.md).
 The private container stack and live five-stage Gemini workflow have been tested

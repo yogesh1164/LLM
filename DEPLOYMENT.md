@@ -1,5 +1,49 @@
 # Private deployment preparation
 
+## V2 branch boundary
+
+The verification below describes the released V1 private deployment. The V2 feature
+branch adds offline-tested worker admission, cancellation persistence, JSON
+telemetry, inactive account primitives, frontend safety and CI. It has not been
+cut over to production. See [V2 security audit](docs/V2_SECURITY_AUDIT.md),
+[migration design](docs/V2_ARCHITECTURE.md) and [V2 verification](docs/V2_VERIFICATION.md).
+Do not enable multi-user access or run ownership migrations from this branch.
+The legacy-data decision must be approved first; no migration file is supplied.
+
+`PROVIDER_MAX_CONCURRENCY` defaults to 4 (range 1–16) per backend process.
+It bounds admitted synchronous Gemini work, including calls whose waiting request
+timed out/cancelled. Slots return only when the actual SDK operation exits; new
+calls fail with a busy response instead of joining an unbounded queue. Keep one
+worker/replica. This does not stop billable upstream work or remove the existing
+Gemini cancellation XFAIL. OpenAI's optional async SDK is outside this guard.
+
+Production JSON logs intentionally omit free-form messages, headers, queries,
+prompts and exception bodies. Use generated `X-Request-ID`, execution UUIDs,
+status/category and numeric duration/token metrics for investigation. API results
+are `Cache-Control: no-store`. Gemini currency estimates remain unavailable;
+configured token rates are not verified provider billing.
+
+CI runs with read-only repository permission on hosted runners and placeholder
+configuration. It never migrates, publishes images or deploys. Required-check
+branch protection is an operator GitHub setting; it is not installed by YAML.
+Dependency/advisory checks can fail later as new advisories are published. Review
+and repair failures; do not add blanket ignores or `continue-on-error`.
+
+Optional `deploy/compose.limits.yml` caps only application services. Validate and
+load-test it on an isolated rehearsal before opting in; memory limits may cause
+OOM termination, so they are not automatically applied to the running stack:
+
+```powershell
+docker --context desktop-linux compose -p agentflow-private -f compose.production.yml -f deploy/compose.limits.yml --env-file .env.production config --quiet
+if ($LASTEXITCODE -ne 0) { throw 'Compose limits validation failed' }
+```
+
+Do not change existing env files, database roles, certificates, volumes or the
+private binding during a code review. Runtime/migration role separation and
+encrypted off-host backup scheduling require an explicit operational plan.
+
+## V1 verified deployment record
+
 Status: private containers, HTTPS, authentication, PostgreSQL recovery, restart
 persistence and the live five-stage Gemini workflow have been verified locally.
 The initial credential rejection was resolved by recreating only the backend

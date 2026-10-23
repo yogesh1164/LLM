@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     workflow_timeout_seconds: int = Field(default=600, ge=10, le=1800)
     agent_timeout_seconds: int = Field(default=90, ge=5, le=300)
     provider_retry_attempts: int = Field(default=2, ge=0, le=5)
+    provider_max_concurrency: int = Field(default=4, ge=1, le=16)
     provider_retry_base_delay_seconds: float = Field(default=0.5, ge=0.05, le=10)
     provider_retry_max_delay_seconds: float = Field(default=4, ge=0.1, le=30)
     orchestrator_timeout_seconds: int | None = Field(default=None, ge=5, le=600)

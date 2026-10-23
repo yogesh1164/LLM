@@ -22,6 +22,8 @@ from app.database import (
     get_task,
     update_task,
 )
+from app.observability import RequestTelemetry, configure_production_logging
+from app.provider_capacity import ProviderBusyError
 from app.providers import ProviderConfigurationError, validate_provider
 from app.schemas import (
     DashboardResponse,
@@ -33,6 +35,8 @@ from app.schemas import (
 from app.workflow import StageTimeoutError, run_workflow
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+if settings.app_env == "production":
+    configure_production_logging()
 logger = logging.getLogger("agentflow.api")
 app = FastAPI(
     title="AgentFlow AI API", version="0.2.0",
@@ -54,7 +58,8 @@ async def _check_rate_limit(request: Request) -> None:
         while events and events[0] < now - 60:
             events.popleft()
         if len(events) >= settings.rate_limit_per_minute:
-            raise HTTPException(status_code=429, detail="Too many workflow requests; try again shortly")
+            raise HTTPException(status_code=429, detail="Too many workflow requests; try again shortly",
+                                headers={"Retry-After": "60"})
         events.append(now)
         # Bound storage for clients that have not returned within the active window.
         if len(_rate_events) > 10_000:
@@ -87,7 +92,8 @@ async def require_api_token(request: Request, call_next):
         try:
             await _check_rate_limit(request)
         except HTTPException as exc:
-            return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
+            return JSONResponse({"detail": exc.detail}, status_code=exc.status_code,
+                                headers=exc.headers)
     try:
         return await call_next(request)
     except Exception as exc:
@@ -105,6 +111,8 @@ def _require_ai() -> None:
 
 
 def _safe_provider_error(exc: Exception) -> tuple[int, str]:
+    if isinstance(exc, ProviderBusyError):
+        return 503, "AI workers are busy; try again shortly"
     exceptions = [exc]
     cause = exc.__cause__ or exc.__context__ or getattr(exc, "original_exception", None)
     while cause is not None and cause not in exceptions:
@@ -198,7 +206,9 @@ async def _execute(task: str) -> dict:
         status, message = _safe_provider_error(exc)
         logger.warning("Workflow request failed (%s)", type(exc).__name__)
         update_task(task_id, status="failed", error=message)
-        raise HTTPException(status_code=status, detail=message) from None
+        raise HTTPException(status_code=status, detail=message,
+                            headers={"Retry-After": "5"} if isinstance(exc, ProviderBusyError)
+                            else None) from None
 
 
 @app.post("/api/workflows/collaborate", response_model=WorkflowResponse)
@@ -326,4 +336,6 @@ app = CORSMiddleware(
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
     allow_headers=["Content-Type", "Authorization"],
+    expose_headers=["X-Request-ID"],
 )
+app = RequestTelemetry(app)

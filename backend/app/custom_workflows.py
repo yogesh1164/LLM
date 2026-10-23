@@ -25,6 +25,7 @@ from app.database import (
     CustomWorkflowStep,
     CustomWorkflowStepRun,
 )
+from app.provider_capacity import ProviderBusyError
 from app.providers import ProviderConfigurationError, ProviderRequestError, run_custom_gemini_agent
 
 router = APIRouter(prefix="/api/custom-workflows", tags=["custom-workflows"])
@@ -205,6 +206,11 @@ async def _execute(run_id: UUID, task: str, agents: list[dict]) -> WorkflowRunRe
             _save_step(run_id, position, status="timed_out", error=message,
                 elapsed_ms=int((time.monotonic() - started) * 1000))
             return _finish_run(run_id, "timed_out", result=last_output or None, error=message)
+        except ProviderBusyError:
+            message = "AI workers are busy; try again shortly"
+            _save_step(run_id, position, status="failed", error=message,
+                elapsed_ms=int((time.monotonic() - started) * 1000))
+            return _finish_run(run_id, "failed", result=last_output or None, error=message)
         except (ProviderConfigurationError, ProviderRequestError, ValueError):
             # Do not expose provider raw exceptions, which might contain credentials.
             message = "Provider failed or returned invalid output; check server logs and provider availability"

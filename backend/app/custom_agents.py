@@ -24,6 +24,7 @@ from app.custom_agent_schemas import (
     configured_models,
 )
 from app.database import CustomAgent, CustomAgentExecution
+from app.provider_capacity import ProviderBusyError
 from app.providers import ProviderConfigurationError, ProviderRequestError, run_custom_gemini_agent
 
 router = APIRouter(prefix="/api/agents", tags=["agent-studio"])
@@ -152,6 +153,17 @@ async def _execute_saved_agent(agent: CustomAgent, task: str) -> CustomAgentExec
         )
     except HTTPException:
         raise
+    except asyncio.CancelledError:
+        _finish_execution(execution_id, status_value="cancelled",
+                          elapsed_ms=int((time.monotonic() - started) * 1000),
+                          error="Execution cancelled")
+        raise
+    except ProviderBusyError:
+        message = "AI workers are busy; try again shortly"
+        _finish_execution(execution_id, status_value="failed",
+                          elapsed_ms=int((time.monotonic() - started) * 1000), error=message)
+        raise HTTPException(status_code=503, detail=message,
+                            headers={"Retry-After": "5"}) from None
     except TimeoutError:
         elapsed_ms = int((time.monotonic() - started) * 1000)
         message = f"Custom agent exceeded its {settings.custom_agent_timeout_seconds}s timeout"

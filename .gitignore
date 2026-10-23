@@ -39,4 +39,14 @@ node_modules/
 .env
 .env.*
 !.env.example
+!.env.production.example
+
+# Database archives and local TLS material
+backups/
+*.dump
+*.sql
+*.pem
+*.key
+*.pfx
+*.crt
 

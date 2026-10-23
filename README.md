@@ -1,5 +1,10 @@
 # AgentFlow AI
 
+For the separate private deployment stack, audit findings, security boundaries,
+backup/restore procedures, and verification commands, see [DEPLOYMENT.md](DEPLOYMENT.md).
+The private container stack and live five-stage Gemini workflow have been tested
+locally. See the runbook's verification results and limitations before use.
+
 AgentFlow runs a bounded Orchestrator → Research → Analysis → Report → Review workflow through a provider-independent stage interface. Gemini is the default provider and uses Google's `google-genai` SDK directly. OpenAI remains an optional provider backed by the OpenAI Agents SDK. Gemini Research can use Google Search grounding when explicitly enabled and returns only source URLs supplied in provider citation metadata. AgentFlow does not run user supplied commands or expose arbitrary system tools.
 
 ## Requirements
@@ -90,7 +95,7 @@ npm run build
 
 ## Current boundaries
 
-- Gemini uses the Agents SDK LiteLLM provider extension for model runs and the `google-genai` SDK for native Google Search grounding. OpenAI uses the Agents SDK default provider and its hosted `WebSearchTool` when enabled. Gemini search availability depends on Google Search grounding access for the API project. Tests make no live provider calls.
+- Gemini uses the `google-genai` SDK directly for model runs and optional native Google Search grounding. OpenAI uses the Agents SDK default provider and its hosted `WebSearchTool` when enabled. Gemini search availability depends on Google Search grounding access for the API project. Automated regression tests make no live provider calls.
 - Agent stages and task results persist in PostgreSQL after migrations are applied. Data and agent routes require the configured bearer token. This is a single shared access token, not per-user identity or multi-tenant authorization. Health and readiness checks are public.
 - Data and agent routes require the configured bearer token. This is a single shared access token, not per-user identity or multi-tenant authorization. Health and readiness checks are public.
 - SSE reports real stage transitions and the final result; it does not stream partial model tokens.

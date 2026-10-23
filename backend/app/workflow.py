@@ -102,12 +102,15 @@ async def run_workflow(task: str, task_id: str, progress: Progress | None = None
         except BaseException as exc:
             elapsed_ms = int((time.monotonic() - started) * 1000)
             timed_out = isinstance(exc, (StageTimeoutError, WorkflowTimeoutError))
-            fail_stage(stage_id, str(exc) or "Agent stage failed",
+            message = ("Agent stage failed. Check provider settings and try again."
+                       if settings.app_env == "production" and not timed_out
+                       else str(exc) or "Agent stage failed")
+            fail_stage(stage_id, message,
                        status="timed_out" if timed_out else "failed", elapsed_ms=elapsed_ms)
             if progress:
                 await progress({"type": "stage", "agent": stage_name,
                                 "status": "timed_out" if timed_out else "failed",
-                                "error": str(exc) or "Agent stage failed", "elapsed_ms": elapsed_ms})
+                                "error": message, "elapsed_ms": elapsed_ms})
             raise
 
     started = workflow_started
@@ -146,7 +149,10 @@ async def run_workflow(task: str, task_id: str, progress: Progress | None = None
         if progress:
             timed_out = isinstance(exc, (StageTimeoutError, WorkflowTimeoutError))
             await progress({"type": "workflow", "status": "timed_out" if timed_out else "failed",
-                            "error": str(exc), "elapsed_ms": int((time.monotonic() - started) * 1000)})
+                            "error": ("Workflow failed. Check provider settings and try again."
+                                      if settings.app_env == "production" and not timed_out
+                                      else str(exc)),
+                            "elapsed_ms": int((time.monotonic() - started) * 1000)})
         raise
 
 

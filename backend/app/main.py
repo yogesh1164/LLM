@@ -34,7 +34,12 @@ from app.workflow import StageTimeoutError, run_workflow
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger("agentflow.api")
-app = FastAPI(title="AgentFlow AI API", version="0.2.0")
+app = FastAPI(
+    title="AgentFlow AI API", version="0.2.0",
+    docs_url=None if settings.app_env == "production" else "/docs",
+    redoc_url=None if settings.app_env == "production" else "/redoc",
+    openapi_url=None if settings.app_env == "production" else "/openapi.json",
+)
 app.include_router(custom_agents_router)
 app.include_router(custom_workflows_router)
 _rate_events: dict[str, deque[float]] = defaultdict(deque)
@@ -73,7 +78,23 @@ async def require_api_token(request: Request, call_next):
         if not provided.startswith("Bearer ") or not hmac.compare_digest(provided[7:], expected):
             return JSONResponse({"detail": "Authentication required"}, status_code=401,
                                 headers={"WWW-Authenticate": "Bearer"})
-    return await call_next(request)
+    if request.method == "POST" and (
+        request.url.path.startswith("/api/agents/")
+        and request.url.path.endswith("/execute")
+        or request.url.path.startswith("/api/custom-workflows/")
+        and request.url.path.endswith("/execute")
+    ):
+        try:
+            await _check_rate_limit(request)
+        except HTTPException as exc:
+            return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
+    try:
+        return await call_next(request)
+    except Exception as exc:
+        if settings.app_env != "production":
+            raise
+        logger.error("Request failed (%s)", type(exc).__name__)
+        return JSONResponse({"detail": "Internal server error"}, status_code=500)
 
 
 def _require_ai() -> None:
@@ -99,6 +120,8 @@ def _safe_provider_error(exc: Exception) -> tuple[int, str]:
     diagnostic = str(diagnostic or "").replace(settings.gemini_api_key.get_secret_value(), "[redacted]") \
         if settings.gemini_api_key else str(diagnostic or "")
     diagnostic = " ".join(diagnostic.split())[:500]
+    if settings.app_env == "production":
+        diagnostic = ""
     if status == 503:
         return 503, f"Gemini is temporarily unavailable (HTTP 503).{(' ' + diagnostic) if diagnostic else ' Try again shortly.'}"
     if status == 429 and any(term in text for term in (

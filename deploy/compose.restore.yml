@@ -1,0 +1,18 @@
+# Disposable restore-verification server only: no network, ports, or persistent volumes.
+# Never merge this file with either application stack.
+services:
+  restorecheck:
+    image: postgres:16-bookworm
+    network_mode: none
+    environment:
+      POSTGRES_DB: restorecheck
+      POSTGRES_USER: restorecheck
+      # Safe only in this isolated networkless drill; connections use a Unix socket.
+      POSTGRES_HOST_AUTH_METHOD: trust
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: [CMD, pg_isready, -U, restorecheck, -d, restorecheck]
+      interval: 5s
+      timeout: 5s
+      retries: 12

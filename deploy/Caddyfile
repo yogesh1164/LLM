@@ -1,0 +1,29 @@
+{
+    admin off
+    auto_https disable_redirects
+}
+
+https://{$SITE_HOST} {
+    # Private CA: trust its root on authorized client devices before use.
+    # Replace this directive with operator-provided certificate paths if required.
+    tls internal
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy no-referrer
+        X-Frame-Options DENY
+        -Server
+    }
+    @api path /api /api/*
+    handle @api {
+        header Cache-Control "no-store"
+        reverse_proxy backend:8000 {
+            flush_interval -1
+        }
+    }
+    # Defense in depth; FastAPI also disables these in production.
+    @docs path /docs /docs/* /redoc /redoc/* /openapi.json
+    respond @docs 404
+    handle {
+        reverse_proxy frontend:3000
+    }
+}

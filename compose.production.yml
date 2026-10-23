@@ -1,0 +1,107 @@
+# Always use -p agentflow-private -f compose.production.yml --env-file .env.production.
+# Do not merge with docker-compose.yml or attach the development volume.
+name: agentflow-private
+
+x-backend: &backend
+  image: agentflow-backend:local
+  build:
+    context: ./backend
+  env_file:
+    - .env.production
+  environment:
+    APP_ENV: production
+    AI_PROVIDER: gemini
+    GEMINI_MODEL: gemini-3.5-flash-lite
+    API_ACCESS_TOKEN: ${API_ACCESS_TOKEN:?Set a private token of at least 32 characters}
+    GEMINI_API_KEY: ${GEMINI_API_KEY:?Set the Gemini API key}
+    FRONTEND_ORIGINS: ${FRONTEND_ORIGINS:?Set the exact HTTPS browser origin}
+    FRONTEND_ORIGIN: ""
+    # Generate a random HEX password to avoid URL escaping ambiguities.
+    DATABASE_URL: postgresql+psycopg://agentflow:${POSTGRES_PASSWORD:?Set a random hexadecimal database password}@postgres:5432/agentflow
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp
+  cap_drop: [ALL]
+  security_opt:
+    - no-new-privileges:true
+  networks: [database, api]
+
+services:
+  postgres:
+    image: postgres:16-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: agentflow
+      POSTGRES_USER: agentflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a random hexadecimal database password}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks: [database]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  # Migrations are a deliberate operator step; not an automatic startup side effect.
+  migrate:
+    <<: *backend
+    profiles: [tools]
+    command: [alembic, upgrade, head]
+    healthcheck:
+      disable: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend:
+    <<: *backend
+    restart: unless-stopped
+    stop_grace_period: 60s
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    image: agentflow-frontend:local
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ""
+    restart: unless-stopped
+    init: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    networks: [web]
+
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      SITE_HOST: ${SITE_HOST:?Set the TLS hostname without scheme or port}
+    # Private local verification only. Choose VPN/private interface deliberately later.
+    ports:
+      - "127.0.0.1:8443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks: [api, web]
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  caddy-data:
+  caddy-config:
+
+networks:
+  database:
+    internal: true
+  api:
+  web:

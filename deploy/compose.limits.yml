@@ -1,0 +1,11 @@
+# Opt-in application limits. Validate/load-test in isolation before enabling.
+# No database configuration, volume changes or additional published ports.
+services:
+  backend:
+    cpus: 2.0
+    mem_limit: 1g
+    pids_limit: 256
+  frontend:
+    cpus: 1.0
+    mem_limit: 512m
+    pids_limit: 128

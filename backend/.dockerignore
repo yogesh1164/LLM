@@ -1,5 +1,6 @@
 *
 !pyproject.toml
+!constraints.txt
 !app/
 !app/**
 !alembic.ini

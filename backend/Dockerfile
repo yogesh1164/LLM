@@ -1,14 +1,14 @@
 # syntax=docker/dockerfile:1
-FROM python:3.12-slim-bookworm AS builder
+FROM python:3.12-slim-bookworm@sha256:6a0e06f5ba0b373d051aabd3fffb9b873f27f9a2a3a14bcbe37dee6f0e3bbc70 AS builder
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_NO_CACHE_DIR=1
 WORKDIR /build
 RUN python -m venv /opt/venv
-COPY pyproject.toml ./
+COPY pyproject.toml constraints.txt ./
 COPY app ./app
 # Preserve the working Gemini SDK. Include the existing optional OpenAI provider.
-RUN /opt/venv/bin/pip install '.[openai]' 'google-genai==2.31.0'
+RUN /opt/venv/bin/pip install --constraint constraints.txt '.[openai]' 'google-genai==2.31.0'
 
-FROM python:3.12-slim-bookworm AS runtime
+FROM python:3.12-slim-bookworm@sha256:6a0e06f5ba0b373d051aabd3fffb9b873f27f9a2a3a14bcbe37dee6f0e3bbc70 AS runtime
 ENV PATH="/opt/venv/bin:$PATH" PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 RUN groupadd --gid 10001 agentflow && useradd --uid 10001 --gid agentflow --no-create-home agentflow
 WORKDIR /app/backend

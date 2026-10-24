@@ -1,5 +1,14 @@
 # Private durable-execution rollout and rollback
 
+Latest preparation: the combined account/durable path now has isolated
+least-privilege runtime, encrypted local backup/restore and browser evidence.
+Use [combined cutover/rollback](V2_COMBINED_RELEASE_RUNBOOK.md),
+[database-role separation](V2_DATABASE_ROLES.md) and
+[encrypted recovery](V2_ENCRYPTED_BACKUP_RUNBOOK.md) for a full V2 decision.
+Current blockers are in [release evidence](V2_RELEASE_EVIDENCE.md). This document
+retains the deliberately separate durable-only 0006 path; it is not a V2 account
+rollback procedure. No existing feature activation occurred.
+
 Current-source note: Alembic head is now `0007_accounts_ownership`. This durable-only
 procedure deliberately pins `0006_durable_executions`; do not replace it with
 `upgrade head`. Account cutover requires the separate

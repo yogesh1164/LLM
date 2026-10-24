@@ -1,6 +1,27 @@
 # V2 development checkpoint
 
-## Current incomplete release candidate: 2026-10-24
+## Current production-readiness continuation: 2026-10-24
+
+Continued from `62234f9` on `feature/v2-production-hardening`. Current engineering
+estimate **95% complete / 5% remaining**; release status **NOT READY**. Implemented
+and verified isolated least-privilege PostgreSQL roles, encrypted synthetic
+backup/restore, combined role-separated account/durable rehearsal, fail-closed
+preflight/image tooling and CI operational checks. Fixed account-mode rate-limit
+double counting and production error handling. See
+[current evidence and remaining approvals](V2_RELEASE_EVIDENCE.md) and
+[final validation results](V2_VERIFICATION.md).
+
+Both final app image scans retain **1 HIGH / 0 CRITICAL**, CVE-2026-85091. No
+supported Trixie patch was available; no suppression or risk acceptance is enabled.
+Off-host destination/key custody, production role rollout, legacy assignment,
+maintenance/cutover, feature activation and final acceptance remain operator gates.
+No production/development DB changes, real environment overwrites, service restarts,
+volume deletions, paid Gemini requests, push, merge or deployment occurred.
+
+Older snapshots below retain their original counts and limits as historical evidence;
+they do not supersede the current evidence/runbooks.
+
+## Historical incomplete release candidate: 2026-10-24
 
 Preserved all 38 original modified/untracked files in local checkpoint
 `09d55e9b8431e5cc463073843b68a9d30d0a63a8` after candidate and history secret scans.

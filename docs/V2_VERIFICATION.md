@@ -1,6 +1,72 @@
 # V2 development checkpoint verification
 
-## Incomplete release candidate continuation: 2026-10-24
+## Final production-readiness continuation: 2026-10-24
+
+Continued clean from `62234f9`; status **NOT READY**. Current scope and remaining
+operator decisions are in [release evidence](V2_RELEASE_EVIDENCE.md).
+
+| Check | Actual final result |
+|---|---|
+| Linux full backend + operational tools, final candidate-derived test image, new tmpfs PostgreSQL | **370 passed, 2 skipped, 1 XFAIL**, 98.60s; includes 356 backend + 14 backup-tool passes |
+| Windows full backend + operational tools | **343 passed, 29 skipped, 1 XFAIL**, 79.40s; includes 329 backend + 14 backup-tool passes |
+| Dedicated fresh PostgreSQL role/CLI integration | **4 passed**; migrations 0005→0006→0007, authenticated SQLAlchemy runtime/ownership/journal/heartbeat, 14 forbidden SQL operations, seeded unsafe column ACLs revoked, CLI error redaction/transaction rollback |
+| Combined role-separated account/durable rehearsal | **32 browser passed**, seven fake SDK calls; encrypted local backup/restore of 9 pre-upgrade and 15 post-upgrade tables; synthetic legacy records preserved and explicitly assigned |
+| Safe application rollback and TLS/session smoke | Actual prior account-aware image `v2-accounts-resume-review`, no app-source bind mount, production accounts + runtime role + durable off: preserved 15 table snapshots, owned task and committed journal; trusted HTTPS login/read/CSRF logout/revoked-cookie rejection and cookie security flags pass; page/ready 200, anonymous dashboard 401, docs 404 |
+| Standalone encrypted PostgreSQL restore | PostgreSQL 16.15, 15 table snapshots equal, migration 0007, owner and account-readiness verified; authenticated encryption and local delivery; off-host false |
+| Frontend checks | ESLint, application + test TypeScript, nine-file encoding check, Next 16.4.2 production build pass; npm audit **0 vulnerabilities** |
+| Backend/static/dependencies | Ruff over backend/deploy/ops and pip check pass; final-image runtime inventory pip-audit **0 known vulnerabilities** |
+| Image build/smoke | Independently tagged backend `v2-mission-review` rebuilt; runtime import, SDK/default inactive flags/CA trust pass; image preflight confirms both non-root users and healthchecks |
+| Image security | Both final candidate fresh Scout scans: **1 HIGH / 0 CRITICAL**, CVE-2026-85091; gate exits 2, no suppression |
+| Infrastructure/tooling | Combined production/accounts/role/limits Compose validates; synthetic resolved-config regression proves runtime/migration credential separation with shared env-file inheritance removed; Hadolint error threshold and actionlint pass; 30 PowerShell documentation blocks parse without execution |
+| CI automation | Added dedicated PostgreSQL least-privilege and synthetic encrypted-backup restore jobs plus operational unit/static checks; hosted Actions not executed |
+| Source security/checkpoint | Candidate files checked against configured real secrets and private-key/binary-artifact patterns; redacted Gitleaks candidate export and eight pre-checkpoint branch commits pass; intended source/tests/docs only selected for local checkpoint |
+
+The Linux skips are the independently guarded least-privilege fixture integration,
+which ran separately in a new named database with all four tests passing, and the
+Docker Compose resolved-configuration test (CLI is absent inside the Linux test
+image; its configuration-only test passed on Windows). Windows
+also skips the 28 PostgreSQL durable/account cases exercised in the full Linux run.
+The retained strict XFAIL is `test_timeout_stops_underlying_sdk_request`'s
+documented synchronous SDK thread-cancellation limitation (see the exact test in
+`test_gemini_responsiveness.py`); it is not hidden or counted as passing. Both full
+runs retain 18 SQLite expression-index reflection warnings. No paid Gemini calls.
+
+Ignored reproducible evidence:
+`backups/v2-mission-final-{linux,windows}-tests.log`,
+`backups/v2-mission-runtime-audit.json`,
+`backups/v2-mission-image-{backend,frontend}/{summary.json,scout.sarif}`,
+`backups/v2-encrypted-backup-evidence.json`, and
+`backups/agentflow-v2-durable-e2e-accounts-20261024090218/report.json` plus
+`frontend-tests.log`, and
+`backups/agentflow-v2-durable-e2e-accounts-20261024091254/report.json` (rollback/TLS).
+Final prior-image rollback/session evidence:
+`backups/agentflow-v2-durable-e2e-accounts-20261024091807/report.json`.
+New role/preflight/image/backup tests and guarded combined
+harness are committed source; no archives or private evidence are staged.
+
+TLS uses a newly generated synthetic CA trusted only by the verification SSLContext;
+no system trust store or real TLS material changed. The test proxy drops all
+capabilities then adds only NET_BIND_SERVICE, needed by the Caddy binary file
+capability. Production cookie protocol was exercised with a trusted urllib cookie
+client; actual-browser login/logout on the intended production ingress remains
+unverified. The tested prior backend ID is
+`sha256:feb37f9eda45aa450dce3ac8eb84ba039c6775c7914672a349a89146c23f3707`.
+No claim extends to arbitrary older images or V1: never serve an owned database
+through V1 bearer mode.
+
+Full Linux tests bind current backend/deploy/ops source read-only into an image
+derived from the final backend candidate, installing only constrained test tools.
+The test container shares the network namespace of a newly created networkless
+tmpfs PostgreSQL fixture. The final runtime inventory audit excludes editable app
+metadata and build tools, as before. Constraints remain version pins, not hashes.
+
+Production/development preservation compares the original five service container
+IDs/start times/images/mounts and three real dotenv hashes; it does not read database
+contents. All existing IDs and hashes remain unchanged. Only identified new test
+fixtures are stopped; no Docker volumes are deleted. `main` remains
+`6bd5b32b0d571370b5c4d2949870bd19a489ac14`, verified with `git rev-parse main`.
+
+## Historical incomplete release candidate continuation: 2026-10-24
 
 Preservation checkpoint: `09d55e9b8431e5cc463073843b68a9d30d0a63a8`, based on
 `519fd72edc91ea1cf6de82b48595612e893c2c2d`. Exactly 38 reviewed files were committed

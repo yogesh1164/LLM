@@ -1,5 +1,13 @@
 # Account and durable execution production preparation
 
+Latest preparation: use the [combined release/rollback runbook](V2_COMBINED_RELEASE_RUNBOOK.md)
+with the [separate database-role rollout](V2_DATABASE_ROLES.md) and
+[encrypted backup/recovery](V2_ENCRYPTED_BACKUP_RUNBOOK.md). Role-separated runtime
+and synthetic account/durable browser acceptance now pass in isolation. The
+inactive `deploy/compose.roles.yml` overrides runtime/migration URLs separately;
+no existing connection, credential or feature flag was changed. Current image
+and operator gates are listed in [release evidence](V2_RELEASE_EVIDENCE.md).
+
 Status, 2026-10-24: implemented and tested in isolation; not deployed. This
 procedure does not authorize a production migration, environment edit or cutover.
 Keep existing databases, volumes, credentials and the V1 service unchanged.

@@ -1,5 +1,16 @@
 # V2 review-image vulnerability triage
 
+## Final production-readiness scan: 2026-10-24
+
+Fresh scans of backend `v2-mission-review` and frontend
+`v2-accounts-resume-review` reproduce **1 HIGH / 0 CRITICAL each**,
+**CVE-2026-85091**. The backend was rebuilt after two account middleware fixes;
+the unchanged frontend image was rescanned. Final IDs, affected packages,
+scanner ranges/source, signed-index package availability, runtime exposure and
+vendor monitoring are in [security disposition](V2_SECURITY_DISPOSITION.md).
+`deploy/image_security.py` retains full SARIF and returns exit 2 for this blocked
+gate. No supported newer Trixie zlib package was offered. No finding was waived.
+
 ## Current Trixie review: 2026-10-24
 
 The current Dockerfiles use pinned Python 3.12 / Node 22 Trixie bases. Separate

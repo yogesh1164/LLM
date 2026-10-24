@@ -1,5 +1,31 @@
 # V2 security audit
 
+## Final focused audit continuation: 2026-10-24
+
+Current evidence supersedes the historical snapshots below:
+[release evidence](V2_RELEASE_EVIDENCE.md), [verification](V2_VERIFICATION.md),
+[image disposition](V2_SECURITY_DISPOSITION.md),
+[database role design](V2_DATABASE_ROLES.md), and
+[encrypted recovery](V2_ENCRYPTED_BACKUP_RUNBOOK.md).
+
+The audit exercised Argon2/login throttling, cookie/session expiry and revocation,
+Origin/CSRF, enumeration-safe credential errors, recovery, every protected route,
+owner/admin/IDOR boundaries, null-owner quarantine, journal owner/recovery and
+spoofing. Reviewed request-body limits, explicit CORS, SQLAlchemy/static SQL
+construction, safe provider errors, allowlisted JSON logging, client session storage,
+Markdown HTML/URL/image handling, Docker users/capabilities/filesystem defaults,
+private TLS headers, dependency inventory and fresh image advisories. Found and
+fixed account fixed-workflow double admission and the missing account production
+exception boundary; regression tests cover quota behavior and secret-bearing errors.
+
+Runtime database permissions and encrypted disaster recovery are now implemented
+and verified **in isolation**, including inherited column-ACL revocation, forbidden
+role/DDL operations and exact restored snapshots. Operational production acceptance
+remains open. Backend/frontend image gates still show **one HIGH / zero CRITICAL
+each**; no patch, suppression, waiver or production-ready claim. Script CSP,
+multi-replica budgets, provider cancellation and actual off-host operations retain
+the explicit limitations recorded in release evidence.
+
 ## Continuation update: 2026-10-24
 
 The historical findings below describe the baseline and earlier checkpoints.

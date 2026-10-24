@@ -1,5 +1,17 @@
 # Private deployment preparation
 
+Current V2 candidate: **NOT READY**, engineering estimate **95%**. Isolated
+database role separation, encrypted synthetic recovery and combined account/durable
+rehearsal are implemented. The zlib HIGH remains in each app image; no real off-host
+destination or production cutover was configured. Use the current
+[release evidence](docs/V2_RELEASE_EVIDENCE.md),
+[combined operator runbook](docs/V2_COMBINED_RELEASE_RUNBOOK.md),
+[database roles](docs/V2_DATABASE_ROLES.md),
+[encrypted backup/restore](docs/V2_ENCRYPTED_BACKUP_RUNBOOK.md) and
+[security disposition](docs/V2_SECURITY_DISPOSITION.md).
+All examples below describing the V1 deployment are historical operational evidence.
+New role overlays/tooling are inactive; no production change is authorized here.
+
 ## V2 branch boundary
 
 Update 2026-10-24: account sessions, ownership enforcement, migration 0007 and

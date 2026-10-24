@@ -20,7 +20,10 @@ from app.config import settings
 url = make_url(settings.database_url)
 if (os.environ.get("AGENTFLOW_OFFLINE_TEST") != "1" or settings.app_env != "development"
         or not settings.durable_execution_enabled or url.database != "agentflow_durable_fixture"
-        or url.username != "durable_fixture" or not (url.host or "").startswith("agentflow-v2-durable-e2e-")
+        or url.username not in ({"durable_fixture", "agentflow_runtime"}
+            if os.environ.get("AGENTFLOW_OFFLINE_LEAST_PRIVILEGE") == "1"
+            and settings.auth_mode == "accounts" else {"durable_fixture"})
+        or not (url.host or "").startswith("agentflow-v2-durable-e2e-")
         or not (url.host or "").endswith("-db")):
     raise RuntimeError("Offline runtime harness requires its dedicated disposable database")
 

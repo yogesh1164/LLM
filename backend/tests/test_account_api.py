@@ -183,3 +183,43 @@ def test_readiness_requires_revision_and_admin(account_mode):
     with db.SessionLocal.begin() as session:
         session.execute(text("UPDATE alembic_version SET version_num='0007_accounts_ownership'"))
     verify_account_readiness()
+
+
+def test_fixed_execution_consumes_one_admission_slot(account_mode, monkeypatch):
+    monkeypatch.setattr(settings, "durable_execution_enabled", False)
+    monkeypatch.setattr(settings, "rate_limit_per_minute", 1)
+    monkeypatch.setattr(main, "_require_ai", lambda: None)
+
+    async def offline(task):
+        return {"id": str(uuid4()), "research": "offline", "analysis": "offline",
+                "report": "offline", "review": "offline", "sources": [],
+                "total_tokens": 0, "estimated_cost": 0}
+
+    monkeypatch.setattr(main, "_execute", offline)
+    client = signed_in("member-a")
+    first = client.post("/api/workflows/execute", json={"task": "offline"})
+    assert first.status_code == 200, first.text
+    second = client.post("/api/workflows/execute", json={"task": "offline"})
+    assert second.status_code == 429
+
+
+@pytest.mark.parametrize("failure_source", ["authenticate", "endpoint"])
+def test_account_production_failures_are_safe(account_mode, monkeypatch, caplog, failure_source):
+    client = signed_in("member-a")
+    # Keep this synthetic development cookie solely to exercise the production
+    # exception boundary without changing the existing client's cookie domain.
+    monkeypatch.setattr(settings, "app_env", "production")
+    monkeypatch.setattr(main.account_routes, "cookie_name", lambda: "agentflow_session_dev")
+
+    def fail(*args, **kwargs):
+        raise RuntimeError("postgresql://private-user:private-password@db/app")
+
+    if failure_source == "authenticate":
+        monkeypatch.setattr(accounts, "authenticate", fail)
+    else:
+        monkeypatch.setattr(main, "dashboard_data", fail)
+    response = client.get("/api/dashboard")
+    assert response.status_code == 500
+    assert response.json() == {"detail": "Internal server error"}
+    assert response.headers["cache-control"] == "no-store"
+    assert "private-password" not in response.text + caplog.text

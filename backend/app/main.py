@@ -101,11 +101,19 @@ async def require_api_token(request: Request, call_next):
                 allowed_origins=set(settings.allowed_frontend_origins),
                 mutation=request.method not in {"GET", "HEAD", "OPTIONS"})
             token = current_principal.set(principal)
-            if request.method == "POST" and request.url.path.endswith("/execute"):
+            if request.method == "POST" and (
+                request.url.path.startswith(("/api/agents/", "/api/custom-workflows/"))
+                and request.url.path.endswith("/execute")
+            ):
                 await _check_rate_limit(request)
             return await call_next(request)
         except HTTPException as exc:
             return JSONResponse({"detail": exc.detail}, status_code=exc.status_code, headers=exc.headers)
+        except Exception as exc:
+            if settings.app_env != "production":
+                raise
+            logger.error("Request failed (%s)", type(exc).__name__)
+            return JSONResponse({"detail": "Internal server error"}, status_code=500)
         finally:
             if token is not None:
                 current_principal.reset(token)

@@ -1,5 +1,17 @@
 # V2 security audit
 
+## Continuation update: 2026-10-24
+
+The historical findings below describe the baseline and earlier checkpoints.
+Current opt-in account mode enforces cookie sessions, exact Origin/CSRF,
+database login throttling and ownership across API resources and durable journals.
+Admin is not a content superuser. Migration 0007 leaves legacy data unassigned;
+offline assignment requires a reviewed manifest. Shared bearer mode is still the
+default and remains unsuitable for multi-user access. See
+[account operations and residual gates](V2_ACCOUNTS_ROLLOUT.md).
+Both review Dockerfiles now use pinned Trixie images. Final advisory evidence and
+remaining zlib gate are in [V2_IMAGE_TRIAGE.md](V2_IMAGE_TRIAGE.md).
+
 Audit date: 2026-10-23. Starting revision: `6bd5b32` (merged private MVP).
 `main` was clean, fetched, and 0 commits ahead/behind `origin/main` before creating
 `feature/v2-production-hardening`. No live schema, credential or volume changes.

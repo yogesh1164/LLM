@@ -233,24 +233,27 @@ def _task_elapsed_ms(task: Task) -> int | None:
 
 
 def create_task(prompt: str) -> str:
+    from app.ownership import claim, scoped
     with SessionLocal.begin() as session:
         if settings.task_retention_days:
             cutoff = datetime.now(UTC) - timedelta(days=settings.task_retention_days)
-            expired = session.scalars(select(Task).where(Task.created_at < cutoff)).all()
+            expired = session.scalars(scoped(select(Task).where(Task.created_at < cutoff), Task)).all()
             for old_task in expired:
                 session.delete(old_task)
         task = Task(prompt=prompt, status="running")
         session.add(task)
         session.flush()
         task_id = task.id
+        claim(session, Task, task_id)
         from app.durable_execution import attach
         attach(session, "task_id", task_id)
     return task_id
 
 
 def delete_task_record(task_id: str) -> bool:
+    from app.ownership import get_owned
     with SessionLocal.begin() as session:
-        task = session.get(Task, task_id)
+        task = get_owned(session, Task, task_id)
         if task is None:
             return False
         session.delete(task)
@@ -338,8 +341,9 @@ def finish_running_stages(task_id: str, *, status: str, error: str) -> list[str]
 
 
 def dashboard_data() -> dict:
+    from app.ownership import scoped
     with SessionLocal() as session:
-        tasks = list(session.scalars(select(Task).order_by(Task.created_at.desc()).limit(50)))
+        tasks = list(session.scalars(scoped(select(Task).order_by(Task.created_at.desc()).limit(50), Task)))
         known_costs = [task.estimated_cost for task in tasks if task.estimated_cost is not None]
         return {
             "agents": 5,
@@ -369,8 +373,9 @@ def dashboard_data() -> dict:
 
 
 def get_task(task_id: str) -> dict | None:
+    from app.ownership import get_owned
     with SessionLocal() as session:
-        task = session.get(Task, task_id)
+        task = get_owned(session, Task, task_id)
         if not task:
             return None
         return {

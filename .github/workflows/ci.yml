@@ -65,7 +65,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install --constraint constraints.txt -e '.[dev,openai]'
-      - run: python -m pytest tests/test_durable_postgres.py -q -p no:cacheprovider
+      - run: python -m pytest tests/test_durable_postgres.py tests/test_accounts_postgres.py -q -p no:cacheprovider
 
   frontend:
     runs-on: ubuntu-24.04

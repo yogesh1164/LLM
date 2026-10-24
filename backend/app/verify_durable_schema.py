@@ -14,12 +14,19 @@ def verify_schema(engine) -> dict:
             raise ValueError("PostgreSQL is required for rollout verification")
         connection.execute(text("SET TRANSACTION READ ONLY"))
         inspector = inspect(connection)
-        if connection.scalars(text("SELECT version_num FROM alembic_version")).all() != ["0006_durable_executions"]:
-            raise ValueError("Expected exactly revision 0006_durable_executions")
+        revisions = connection.scalars(text("SELECT version_num FROM alembic_version")).all()
+        if revisions not in (["0006_durable_executions"], ["0007_accounts_ownership"]):
+            raise ValueError("Expected verified durable/account revision")
+        has_accounts = revisions == ["0007_accounts_ownership"]
         columns = {column["name"]: column for column in inspector.get_columns("durable_executions")}
-        if set(columns) != set(db.DurableExecution.__table__.columns.keys()):
+        expected_columns = set(db.DurableExecution.__table__.columns.keys()) - {"owner_id"}
+        if has_accounts:
+            expected_columns.add("owner_id")
+        if set(columns) != expected_columns:
             raise ValueError("Unexpected execution journal columns")
         for model_column in db.DurableExecution.__table__.columns:
+            if model_column.name == "owner_id" and not has_accounts:
+                continue
             actual = columns[model_column.name]
             expected_type = next(kind for kind in (String, DateTime, Boolean, Uuid)
                                  if isinstance(model_column.type, kind))
@@ -36,9 +43,12 @@ def verify_schema(engine) -> dict:
         fks = {(tuple(item["constrained_columns"]), item["referred_table"],
                 tuple(item["referred_columns"]), item["options"].get("ondelete"))
                for item in inspector.get_foreign_keys("durable_executions")}
-        if fks != {(("task_id",), "tasks", ("id",), "SET NULL"),
+        expected_fks = {(("task_id",), "tasks", ("id",), "SET NULL"),
                    (("agent_execution_id",), "custom_agent_executions", ("id",), "SET NULL"),
-                   (("workflow_run_id",), "custom_workflow_runs", ("id",), "SET NULL")}:
+                   (("workflow_run_id",), "custom_workflow_runs", ("id",), "SET NULL")}
+        if has_accounts:
+            expected_fks.add((("owner_id",), "users", ("id",), "RESTRICT"))
+        if fks != expected_fks:
             raise ValueError("Execution journal foreign key mismatch")
         checks = {item["name"]: item["sqltext"] for item in inspector.get_check_constraints("durable_executions")}
         if set(checks) != {"ck_durable_state", "ck_durable_one_target"}:
@@ -61,7 +71,7 @@ def verify_schema(engine) -> dict:
         """))
         if invalid or invalid_index:
             raise ValueError("Execution journal has unvalidated constraints/indexes")
-        return {"schema_verified": True, "revision": "0006_durable_executions", "columns": len(columns),
+        return {"schema_verified": True, "revision": revisions[0], "columns": len(columns),
                 "unique_constraints": len(uniques), "foreign_keys": len(fks), "read_only": True}
 
 

@@ -25,6 +25,7 @@ from app.custom_agent_schemas import (
 )
 from app.database import CustomAgent, CustomAgentExecution
 from app.durable_execution import attach, before_provider, execution, guard
+from app.ownership import claim, get_owned, scoped
 from app.provider_capacity import ProviderBusyError
 from app.providers import ProviderConfigurationError, ProviderRequestError, run_custom_gemini_agent
 
@@ -44,7 +45,7 @@ def _protect_builtin_identifier(agent_id: str) -> UUID:
 
 def _get_agent(session, agent_id: str) -> CustomAgent:
     identifier = _protect_builtin_identifier(agent_id)
-    agent = session.get(CustomAgent, identifier)
+    agent = get_owned(session, CustomAgent, identifier)
     if agent is None:
         raise HTTPException(status_code=404, detail="Custom agent not found")
     return agent
@@ -56,7 +57,7 @@ def _check_reserved_name(name: str) -> None:
 
 
 def _check_unique_name(session, name: str, exclude: UUID | None = None) -> None:
-    query = select(CustomAgent.id).where(func.lower(CustomAgent.name) == name.lower())
+    query = scoped(select(CustomAgent.id).where(func.lower(CustomAgent.name) == name.lower()), CustomAgent)
     if exclude is not None:
         query = query.where(CustomAgent.id != exclude)
     if session.scalar(query) is not None:
@@ -82,6 +83,7 @@ def _start_execution(agent: CustomAgent, task: str) -> UUID:
         )
         session.add(execution)
         session.flush()
+        claim(session, CustomAgentExecution, execution.id)
         attach(session, "agent_execution_id", execution.id)
         return execution.id
 
@@ -203,7 +205,7 @@ def list_agent_executions(agent_id: str) -> list[CustomAgentExecutionRead]:
     with database.SessionLocal() as session:
         agent = _get_agent(session, agent_id)
         executions = session.scalars(
-            select(CustomAgentExecution)
+            scoped(select(CustomAgentExecution), CustomAgentExecution)
             .where(CustomAgentExecution.agent_id == agent.id)
             .order_by(CustomAgentExecution.created_at.desc())
             .limit(50)
@@ -223,7 +225,7 @@ async def execute_agent(agent_id: str, request: CustomAgentExecutionRequest,
 @router.get("", response_model=list[AgentConfigRead])
 def list_agents() -> list[AgentConfigRead]:
     with database.SessionLocal() as session:
-        agents = session.scalars(select(CustomAgent).order_by(func.lower(CustomAgent.name))).all()
+        agents = session.scalars(scoped(select(CustomAgent), CustomAgent).order_by(func.lower(CustomAgent.name))).all()
         return [_read(agent) for agent in agents]
 
 
@@ -242,6 +244,7 @@ def create_agent(request: AgentConfigCreate) -> AgentConfigRead:
             _check_unique_name(session, request.name)
             session.add(agent)
             session.flush()
+            claim(session, CustomAgent, agent.id)
     except IntegrityError:
         raise HTTPException(status_code=409, detail="An agent with that name already exists") from None
     return _read(agent)
@@ -252,7 +255,7 @@ def update_agent(agent_id: str, request: AgentConfigPatch) -> AgentConfigRead:
     identifier = _protect_builtin_identifier(agent_id)
     try:
         with database.SessionLocal.begin() as session:
-            agent = session.get(CustomAgent, identifier)
+            agent = get_owned(session, CustomAgent, identifier)
             if agent is None:
                 raise HTTPException(status_code=404, detail="Custom agent not found")
             merged = {field: getattr(agent, field) for field in AgentConfigCreate.model_fields}
@@ -277,13 +280,13 @@ def duplicate_agent(agent_id: str) -> AgentConfigRead:
     identifier = _protect_builtin_identifier(agent_id)
     try:
         with database.SessionLocal.begin() as session:
-            source = session.get(CustomAgent, identifier)
+            source = get_owned(session, CustomAgent, identifier)
             if source is None:
                 raise HTTPException(status_code=404, detail="Custom agent not found")
             base_name = source.name[:68].rstrip() + " (Copy)"
             candidate = base_name
             suffix = 2
-            while session.scalar(select(CustomAgent.id).where(func.lower(CustomAgent.name) == candidate.lower())):
+            while session.scalar(scoped(select(CustomAgent.id).where(func.lower(CustomAgent.name) == candidate.lower()), CustomAgent)):
                 suffix_text = f" (Copy {suffix})"
                 candidate = source.name[: 80 - len(suffix_text)].rstrip() + suffix_text
                 suffix += 1
@@ -300,6 +303,7 @@ def duplicate_agent(agent_id: str) -> AgentConfigRead:
             )
             session.add(duplicate)
             session.flush()
+            claim(session, CustomAgent, duplicate.id)
     except IntegrityError:
         raise HTTPException(status_code=409, detail="Could not create a uniquely named agent copy") from None
     return _read(duplicate)
@@ -309,7 +313,7 @@ def duplicate_agent(agent_id: str) -> AgentConfigRead:
 def delete_agent(agent_id: str) -> None:
     identifier = _protect_builtin_identifier(agent_id)
     with database.SessionLocal.begin() as session:
-        agent = session.get(CustomAgent, identifier)
+        agent = get_owned(session, CustomAgent, identifier)
         if agent is None:
             raise HTTPException(status_code=404, detail="Custom agent not found")
         session.delete(agent)

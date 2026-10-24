@@ -1,5 +1,18 @@
 # V2 architecture and migration decision
 
+## Implementation update: 2026-10-24
+
+Accounts, sessions, nullable ownership migration 0007, transactional operator
+assignment, login limits and cookie UI are implemented, disabled by default and
+tested in isolation. [V2_ACCOUNTS_ROLLOUT.md](V2_ACCOUNTS_ROLLOUT.md) is the current
+contract. It supersedes the original proposal below: accounts are provisioned
+offline (no invite endpoint); login CSRF uses exact Origin plus a custom header;
+CSRF is derived from the random session token and only its digest is persisted.
+No live migration or ownership decision is implied. Durable journals now scope
+idempotency to the authenticated owner. Null legacy data is quarantined.
+
+## Original proposal and historical foundation state
+
 Status: proposed account/ownership cutover, not enabled. The working bearer MVP
 is preserved. `auth_foundation.py` is a tested, inactive library; there are no
 registration/login routes or user tables yet. Do not describe its unit tests as

@@ -1,5 +1,10 @@
 # Private durable-execution rollout and rollback
 
+Current-source note: Alembic head is now `0007_accounts_ownership`. This durable-only
+procedure deliberately pins `0006_durable_executions`; do not replace it with
+`upgrade head`. Account cutover requires the separate
+[account review procedure](V2_ACCOUNTS_ROLLOUT.md) and production approval.
+
 **Approval boundary:** this is an operator procedure, not authorization to execute
 it. No existing development/production database was migrated or activated during
 development. Obtain explicit approval for the maintenance window, production DB

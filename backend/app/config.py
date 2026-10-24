@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     app_env: Literal["development", "production"] = "development"
     ai_provider: Literal["gemini", "openai"] = "gemini"
     api_access_token: SecretStr | None = None
+    auth_mode: Literal["legacy_bearer", "accounts"] = "legacy_bearer"
     gemini_api_key: SecretStr | None = None
     gemini_model: str = "gemini-3.8-flash"
     # Search grounding may incur usage charges; require an explicit opt-in.
@@ -100,7 +101,7 @@ class Settings(BaseSettings):
             if self.app_env == "production" and parsed.scheme != "https":
                 raise ValueError("Production CORS origins must use HTTPS")
         if self.app_env == "production":
-            if not self.api_access_token:
+            if self.auth_mode == "legacy_bearer" and not self.api_access_token:
                 raise ValueError("Production requires API_ACCESS_TOKEN")
             if not self.allowed_frontend_origins:
                 raise ValueError("Production requires explicit FRONTEND_ORIGINS")

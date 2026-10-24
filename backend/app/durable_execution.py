@@ -162,12 +162,14 @@ def reserve(key: str | None, operation: str, payload: dict) -> tuple[Lease | Non
     from sqlalchemy.dialects.postgresql import insert as pg_insert
     from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
+    from app.ownership import claim, owner_id
+    scope = str(owner_id()) if settings.auth_mode == "accounts" else "legacy_workspace"
     digest = hashlib.sha256(json.dumps({"operation": operation, **payload},
         sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode()).hexdigest()
     with db.SessionLocal.begin() as session:
         now = _now(session)
         lease = Lease(str(uuid4()), str(uuid4()))
-        values = {"id": lease.id, "scope": "legacy_workspace", "operation": operation,
+        values = {"id": lease.id, "scope": scope, "operation": operation,
                   "key_digest": hashlib.sha256(key.encode()).hexdigest(), "request_digest": digest,
                   "state": "running", "lease_token": lease.token, "created_at": now,
                   "heartbeat_at": now,
@@ -177,8 +179,10 @@ def reserve(key: str | None, operation: str, payload: dict) -> tuple[Lease | Non
         inserted = session.scalar(insert(db.DurableExecution).values(**values)
             .on_conflict_do_nothing(index_elements=["scope", "key_digest"])
             .returning(db.DurableExecution.id))
+        if inserted:
+            claim(session, db.DurableExecution, lease.id)
         row = session.scalar(select(db.DurableExecution).where(
-            db.DurableExecution.scope == "legacy_workspace",
+            db.DurableExecution.scope == scope,
             db.DurableExecution.key_digest == values["key_digest"]))
         if row.request_digest != digest:
             raise HTTPException(409, "Idempotency key was already used for a different request")
@@ -309,7 +313,8 @@ async def execution_status(execution_id: str):
     if not settings.durable_execution_enabled:
         raise HTTPException(503, "Durable execution is disabled")
     with db.SessionLocal() as session:
-        row = session.get(db.DurableExecution, execution_id)
+        from app.ownership import get_owned
+        row = get_owned(session, db.DurableExecution, execution_id)
         if row is None:
             raise HTTPException(404, "Execution not found")
         return _view(row)
@@ -326,6 +331,12 @@ async def _recovery_loop():
 
 @asynccontextmanager
 async def lifespan(app):
+    if settings.auth_mode == "accounts":
+        from app.ownership import verify_account_readiness
+        verify_account_readiness()
+    else:
+        from app.ownership import reject_unsafe_legacy_mode
+        reject_unsafe_legacy_mode()
     if not settings.durable_execution_enabled:
         yield
         return

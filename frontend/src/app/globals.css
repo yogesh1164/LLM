@@ -10,3 +10,9 @@
 /* Execution recovery controls inherit the existing dark/light theme. */
 .execution-notice { margin: 12px 0; overflow-wrap: anywhere; }
 .execution-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Account controls share the existing dark workspace palette. */
+.account-toolbar { position: relative; z-index: 6; margin-left: 248px; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; padding: .75rem 1.25rem; background: #161823; color: #e8e9ef; border-bottom: 1px solid #343747; }
+@media (max-width: 900px) { .account-toolbar { margin-left: 76px; } }
+.account-toolbar button { border: 1px solid #53566b; border-radius: 6px; padding: .4rem .7rem; background: #252838; color: inherit; cursor: pointer; }
+.account-toolbar form { display: flex; flex-wrap: wrap; gap: 1rem; width: 100%; }
+.account-toolbar input { background: #10121b; color: #e8e9ef; border: 1px solid #53566b; padding: .4rem; }

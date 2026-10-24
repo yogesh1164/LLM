@@ -17,7 +17,7 @@ def _routes():
         app = app.app
     # Use FastAPI's expanded schema, including lazily included routers.
     return [(method.upper(), path) for path, operations in app.openapi()["paths"].items()
-            if path not in {"/api/health", "/api/ready"}
+            if path not in {"/api/health", "/api/ready", "/api/auth/mode"}
             for method in operations if method in {"get", "post", "put", "patch", "delete"}]
 
 
@@ -25,7 +25,7 @@ def _routes():
 @pytest.mark.parametrize("headers", [{}, {"Authorization": "Bearer invalid"}])
 def test_all_sensitive_routes_require_authentication(method, path, headers):
     response = TestClient(main.app).request(method, path, headers=headers)
-    assert response.status_code == 401
+    assert response.status_code == (404 if path.startswith("/api/auth/") else 401)
 
 
 def _saved_agent():

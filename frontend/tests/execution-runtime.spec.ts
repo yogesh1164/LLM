@@ -2,13 +2,20 @@ import { test, expect } from "@playwright/test";
 
 const base = process.env.DURABLE_RUNTIME_BASE_URL;
 const token = process.env.DURABLE_RUNTIME_TOKEN;
+const accounts = process.env.DURABLE_RUNTIME_ACCOUNTS === "1";
 test.describe("offline enabled runtime", () => {
-  test.skip(!base || !token, "Run through backend/tests/verify_durable_runtime.py to provision the guarded offline fixture");
+  test.skip(!base || (!token && !accounts), "Run through the guarded offline runtime fixture");
   test.beforeEach(async ({ request, page }) => {
     if (!base || !/^http:\/\/127\.0\.0\.1:\d+$/.test(base)) throw new Error("Runtime tests require a loopback-only fixture URL");
     const health = await request.get(base + "/api/health");
     expect(health.headers()["x-agentflow-offline-fixture"]).toBe("1");
-    await page.addInitScript(value => sessionStorage.setItem("agentflow_api_token", value!), token);
+    if (accounts) {
+      const login = await request.post(base + "/api/auth/login", { headers: {
+        Origin: "http://127.0.0.1:3307", "X-AgentFlow-Login": "1" },
+        data: { login: "browser-admin", password: "offline-browser-password" } });
+      expect(login.status()).toBe(200);
+      await page.context().addCookies((await request.storageState()).cookies);
+    } else await page.addInitScript(value => sessionStorage.setItem("agentflow_api_token", value!), token);
     // Browser sees same-origin /api; only this dedicated, identified fixture receives requests.
     await page.route("**/api/**", async route => {
       const path = new URL(route.request().url()).pathname;
@@ -18,8 +25,10 @@ test.describe("offline enabled runtime", () => {
   });
   test.afterEach(async ({ page }) => { await page.unrouteAll({ behavior: "wait" }); });
 
-  for (const surface of ["fixed", "custom_agent", "custom_workflow"]) test(`${surface}: UI, PostgreSQL journal, refresh and GET-only monitoring`, async ({ page, request }) => {
-    const headers = { Authorization: "Bearer " + token };
+  for (const surface of ["fixed", "custom_agent", "custom_workflow"]) test(`${surface}: UI, PostgreSQL journal, refresh and GET-only monitoring`, async ({ page, request, playwright }) => {
+    const headers: Record<string, string> = accounts ? { Origin: "http://127.0.0.1:3307",
+      "X-CSRF-Token": (await (await request.get(base + "/api/auth/me")).json()).csrf_token }
+      : { Authorization: "Bearer " + token };
     let agentId = "", workflowId = "";
     const name = "Offline browser " + crypto.randomUUID().slice(0, 8);
     if (surface !== "fixed") {
@@ -56,6 +65,18 @@ test.describe("offline enabled runtime", () => {
     const id = await page.evaluate(path => JSON.parse(sessionStorage.getItem("agentflow.executions.v1")!)[path].executionId, path);
     const journal = await request.get(base + "/api/executions/" + id, { headers });
     expect((await journal.json()).state).toBe("completed");
+    if (accounts) {
+      const other = await playwright.request.newContext();
+      try {
+        const login = await other.post(base + "/api/auth/login", { headers: {
+          Origin: "http://127.0.0.1:3307", "X-AgentFlow-Login": "1" },
+          data: { login: "browser-member", password: "offline-browser-password" } });
+        expect(login.status()).toBe(200);
+        expect((await other.get(base + "/api/executions/" + id)).status()).toBe(404);
+        if (agentId) expect((await other.get(base + "/api/agents/" + agentId)).status()).toBe(404);
+        if (workflowId) expect((await other.get(base + "/api/custom-workflows/" + workflowId)).status()).toBe(404);
+      } finally { await other.dispose(); }
+    }
     await open();
     await expect(page.locator('[aria-label="Submission status"]')).toContainText("Completed");
     await expect(page.getByText(text, { exact: true }).first()).toBeVisible();

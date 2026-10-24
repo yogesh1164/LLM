@@ -12,6 +12,7 @@ async function setup(page: Page, handle?: (route: Route, path: string) => Promis
   // Every API request is intercepted. No real provider/backend is contacted.
   await page.route("**/api/**", async route => {
     const path = new URL(route.request().url()).pathname;
+    if (path === "/api/auth/mode") return fulfill(route, { mode: "legacy_bearer" });
     if (path === "/api/dashboard") return fulfill(route, dashboard);
     if (handle) return handle(route, path);
     throw new Error(`Unexpected API path: ${path}`);

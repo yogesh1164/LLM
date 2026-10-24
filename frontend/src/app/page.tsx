@@ -8,6 +8,7 @@ import { AppIcon, type IconName } from "./AppIcon";
 import { apiFetch, getApiTokenSnapshot, subscribeApiToken } from "./api";
 import { useDurableExecution } from "./useDurableExecution";
 import { ExecutionNotice } from "./ExecutionNotice";
+import { AccountGate } from "./AccountGate";
 import "./results.css";
 import "./tasks.css";
 
@@ -30,6 +31,9 @@ const noSubscribe = () => () => undefined;
 const clientReady = () => true;
 const serverNotReady = () => false;
 export default function Home() {
+  return <AccountGate><Workspace/></AccountGate>;
+}
+function Workspace() {
   const [section, setSection] = useState("Overview");
   const [collapsed, setCollapsed] = useState(false);
   const [light, setLight] = useState(false);

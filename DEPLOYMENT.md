@@ -2,13 +2,21 @@
 
 ## V2 branch boundary
 
+Update 2026-10-24: account sessions, ownership enforcement, migration 0007 and
+cookie-authenticated UI are now implemented for isolated verification. See
+[account cutover preparation](docs/V2_ACCOUNTS_ROLLOUT.md). Neither accounts nor
+durable execution is activated on the existing deployment. The historical V2
+foundation description below predates these changes. Do not use `upgrade head`
+for a durable-only rollout; explicitly select 0006 or separately review 0007.
+Current review Dockerfiles use pinned Trixie bases; image security remains gated.
+
 The verification below describes the released V1 private deployment. The V2 feature
 branch adds offline-tested worker admission, cancellation persistence, JSON
 telemetry, inactive account primitives, frontend safety and CI. It has not been
 cut over to production. See [V2 security audit](docs/V2_SECURITY_AUDIT.md),
 [migration design](docs/V2_ARCHITECTURE.md) and [V2 verification](docs/V2_VERIFICATION.md).
 Do not enable multi-user access or run ownership migrations from this branch.
-The legacy-data decision must be approved first; no migration file is supplied.
+The legacy-data decision must be approved before production ownership assignment.
 
 `PROVIDER_MAX_CONCURRENCY` defaults to 4 (range 1–16) per backend process.
 It bounds admitted synchronous Gemini work, including calls whose waiting request

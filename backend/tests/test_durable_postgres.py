@@ -53,7 +53,7 @@ def postgres(monkeypatch, request):
     monkeypatch.setattr(settings, "database_url", isolated_url.render_as_string(hide_password=False))
     monkeypatch.setattr(db, "SessionLocal", sessionmaker(engine, expire_on_commit=False))
     try:
-        command.upgrade(migration_config(), getattr(request, "param", "head"))
+        command.upgrade(migration_config(), getattr(request, "param", "0006_durable_executions"))
         yield engine
     finally:
         engine.dispose()
@@ -257,9 +257,13 @@ def legacy_history():
 
 
 def content_snapshot(engine):
-    tables = [table for name, table in db.Base.metadata.tables.items() if name != "durable_executions"]
+    legacy_tables = {"tasks", "agent_executions", "custom_agents", "custom_agent_executions",
+                     "custom_workflows", "custom_workflow_steps", "custom_workflow_runs",
+                     "custom_workflow_step_runs"}
+    tables = [table for name, table in db.Base.metadata.tables.items() if name in legacy_tables]
     with engine.connect() as connection:
-        return {table.name: sorted([tuple(row) for row in connection.execute(select(table))], key=repr)
+        return {table.name: sorted([tuple(row) for row in connection.execute(
+                    select(*[c for c in table.c if c.name != "owner_id"]))], key=repr)
                 for table in tables}
 
 
@@ -267,12 +271,12 @@ def content_snapshot(engine):
 def test_0006_preserves_all_legacy_history_tracks_revision_and_reapplies_safely(postgres):
     legacy_history()
     before = content_snapshot(postgres)
-    command.upgrade(migration_config(), "head")
-    command.upgrade(migration_config(), "head")
+    command.upgrade(migration_config(), "0006_durable_executions")
+    command.upgrade(migration_config(), "0006_durable_executions")
     assert content_snapshot(postgres) == before
     inspector = inspect_db(postgres)
     assert {c["name"] for c in inspector.get_columns("durable_executions")} == set(
-        db.DurableExecution.__table__.columns.keys())
+        db.DurableExecution.__table__.columns.keys()) - {"owner_id"}
     assert [(i["name"], i["column_names"]) for i in inspector.get_indexes("durable_executions")
             if not i.get("duplicates_constraint")] == [("ix_durable_expiry", ["state", "lease_expires_at"])]
     uniques = {tuple(c["column_names"]) for c in inspector.get_unique_constraints("durable_executions")}
@@ -295,7 +299,8 @@ def test_0006_database_constraints_reject_invalid_journals_atomically(postgres, 
     lease, _ = reserve()
     with db.SessionLocal() as session:
         original = session.get(db.DurableExecution, lease.id)
-        values = {column.name: getattr(original, column.name) for column in db.DurableExecution.__table__.columns}
+        values = {column.name: getattr(original, column.name) for column in db.DurableExecution.__table__.columns
+                  if column.name != "owner_id"}
         values["id"] = str(uuid4())
         if violation != "duplicate_key":
             values["key_digest"] = uuid4().hex * 2

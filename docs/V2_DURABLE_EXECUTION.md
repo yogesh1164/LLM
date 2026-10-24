@@ -1,5 +1,10 @@
 # Durable execution foundation
 
+Account update, 2026-10-24: opt-in account mode now scopes journals and linked
+resources to the authenticated owner. The shared-workspace limitations later in
+this document describe legacy bearer mode. Migration 0007 and account cutover are
+separate from durable-only migration 0006; see [account rollout](V2_ACCOUNTS_ROLLOUT.md).
+
 Status: backend and frontend integrated and enabled in disposable tests;
 `DURABLE_EXECUTION_ENABLED=false` remains the deployment default. No existing
 database was migrated. No account/ownership cutover or provider SDK rewrite.

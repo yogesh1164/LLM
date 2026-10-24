@@ -7,10 +7,12 @@ import time
 from collections import defaultdict, deque
 
 from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from app import durable_execution
+from app import account_routes, accounts, durable_execution
 from app.config import settings
 from app.custom_agents import router as custom_agents_router
 from app.custom_workflows import router as custom_workflows_router
@@ -24,6 +26,7 @@ from app.database import (
     update_task,
 )
 from app.observability import RequestTelemetry, configure_production_logging
+from app.ownership import current_principal
 from app.provider_capacity import ProviderBusyError
 from app.providers import ProviderConfigurationError, validate_provider
 from app.request_limits import RequestBodyLimit
@@ -50,6 +53,14 @@ app = FastAPI(
 app.include_router(custom_agents_router)
 app.include_router(custom_workflows_router)
 app.include_router(durable_execution.router)
+app.include_router(account_routes.router)
+
+
+@app.exception_handler(RequestValidationError)
+async def safe_validation_error(request, exc):
+    if request.url.path.startswith("/api/auth/"):
+        return JSONResponse({"detail": "Invalid authentication request"}, status_code=422)
+    return await request_validation_exception_handler(request, exc)
 _rate_events: dict[str, deque[float]] = defaultdict(deque)
 _rate_limit_lock = threading.Lock()
 
@@ -76,6 +87,30 @@ async def _check_rate_limit(request: Request) -> None:
 
 @app.middleware("http")
 async def require_api_token(request: Request, call_next):
+    if request.url.path == "/api/auth/mode":
+        return await call_next(request)
+    if settings.auth_mode == "accounts" and request.url.path.startswith("/api/"):
+        if request.url.path in {"/api/health", "/api/ready", "/api/auth/login"}:
+            return await call_next(request)
+        token = None
+        try:
+            from starlette.concurrency import run_in_threadpool
+            principal = await run_in_threadpool(accounts.authenticate,
+                request.cookies.get(account_routes.cookie_name()),
+                origin=request.headers.get("origin"), csrf=request.headers.get("x-csrf-token"),
+                allowed_origins=set(settings.allowed_frontend_origins),
+                mutation=request.method not in {"GET", "HEAD", "OPTIONS"})
+            token = current_principal.set(principal)
+            if request.method == "POST" and request.url.path.endswith("/execute"):
+                await _check_rate_limit(request)
+            return await call_next(request)
+        except HTTPException as exc:
+            return JSONResponse({"detail": exc.detail}, status_code=exc.status_code, headers=exc.headers)
+        finally:
+            if token is not None:
+                current_principal.reset(token)
+    if request.url.path.startswith("/api/auth/"):
+        return JSONResponse({"detail": "Not found"}, status_code=404)
     if request.url.path.startswith("/api/") and request.url.path not in {
         "/api/health", "/api/ready",
     }:
@@ -345,9 +380,9 @@ async def remove_task(task_id: str) -> Response:
 app = CORSMiddleware(
     app=RequestBodyLimit(app, lambda: settings.max_request_body_bytes),
     allow_origins=settings.allowed_frontend_origins,
-    allow_credentials=False,
+    allow_credentials=settings.auth_mode == "accounts",
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
-    allow_headers=["Content-Type", "Authorization", "Idempotency-Key"],
+    allow_headers=["Content-Type", "Authorization", "Idempotency-Key", "X-CSRF-Token", "X-AgentFlow-Login"],
     expose_headers=["X-Request-ID", "X-Execution-ID", "Location"],
 )
 app = RequestTelemetry(app)

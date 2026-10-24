@@ -42,6 +42,11 @@ class Settings(BaseSettings):
     task_retention_days: int = Field(default=0, ge=0, le=3650)
     rate_limit_per_minute: int = Field(default=10, ge=1, le=600)
     max_request_body_bytes: int = Field(default=262_144, ge=1024, le=1_048_576)
+    # Explicit opt-in only after the additive migration is approved/applied.
+    durable_execution_enabled: bool = False
+    execution_lease_seconds: int = Field(default=60, ge=10, le=600)
+    execution_heartbeat_seconds: float = Field(default=5, ge=1, le=60)
+    execution_recovery_seconds: float = Field(default=15, ge=1, le=60)
     input_token_cost_per_million: float = Field(default=0.25, ge=0)
     cached_input_token_cost_per_million: float = Field(default=0.025, ge=0)
     output_token_cost_per_million: float = Field(default=2.0, ge=0)
@@ -73,6 +78,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_model_name(self) -> "Settings":
+        if self.execution_heartbeat_seconds * 3 >= self.execution_lease_seconds:
+            raise ValueError("Execution heartbeat must be less than one third of the lease")
         model = self.active_model.strip()
         if not model or any(char.isspace() for char in model):
             raise ValueError("The configured AI model name is invalid")

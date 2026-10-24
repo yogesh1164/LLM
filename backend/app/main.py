@@ -10,6 +10,7 @@ from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from app import durable_execution
 from app.config import settings
 from app.custom_agents import router as custom_agents_router
 from app.custom_workflows import router as custom_workflows_router
@@ -41,12 +42,14 @@ if settings.app_env == "production":
 logger = logging.getLogger("agentflow.api")
 app = FastAPI(
     title="AgentFlow AI API", version="0.2.0",
+    lifespan=durable_execution.lifespan,
     docs_url=None if settings.app_env == "production" else "/docs",
     redoc_url=None if settings.app_env == "production" else "/redoc",
     openapi_url=None if settings.app_env == "production" else "/openapi.json",
 )
 app.include_router(custom_agents_router)
 app.include_router(custom_workflows_router)
+app.include_router(durable_execution.router)
 _rate_events: dict[str, deque[float]] = defaultdict(deque)
 _rate_limit_lock = threading.Lock()
 
@@ -215,6 +218,7 @@ async def _execute(task: str) -> dict:
 
 
 @app.post("/api/workflows/collaborate", response_model=WorkflowResponse)
+@durable_execution.execution("fixed_collaborate")
 async def collaborate(request: WorkflowRequest, http_request: Request) -> WorkflowResponse:
     await _check_rate_limit(http_request)
     _require_ai()
@@ -223,6 +227,7 @@ async def collaborate(request: WorkflowRequest, http_request: Request) -> Workfl
 
 
 @app.post("/api/workflows/execute", response_model=ExecutionResponse)
+@durable_execution.execution("fixed_execute")
 async def execute_workflow(request: WorkflowRequest, http_request: Request) -> ExecutionResponse:
     await _check_rate_limit(http_request)
     _require_ai()
@@ -232,6 +237,7 @@ async def execute_workflow(request: WorkflowRequest, http_request: Request) -> E
 
 
 @app.post("/api/workflows/stream")
+@durable_execution.execution("fixed_stream")
 async def stream_workflow(request: WorkflowRequest, http_request: Request) -> StreamingResponse:
     await _check_rate_limit(http_request)
     _require_ai()
@@ -275,6 +281,9 @@ async def stream_workflow(request: WorkflowRequest, http_request: Request) -> St
                 update_task(task_id, status="failed", error="Workflow cancelled")
                 await send({"type": "error", "detail": "Workflow cancelled", "status": "cancelled"})
                 raise
+            except durable_execution.LeaseLost:
+                await send({"type": "error", "detail": "Execution ownership lost; inspect execution record",
+                            "status": "interrupted"})
             except StageTimeoutError as exc:
                 message = str(exc)
                 update_task(task_id, status="failed", error=message)
@@ -338,7 +347,7 @@ app = CORSMiddleware(
     allow_origins=settings.allowed_frontend_origins,
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
-    allow_headers=["Content-Type", "Authorization"],
-    expose_headers=["X-Request-ID"],
+    allow_headers=["Content-Type", "Authorization", "Idempotency-Key"],
+    expose_headers=["X-Request-ID", "X-Execution-ID", "Location"],
 )
 app = RequestTelemetry(app)

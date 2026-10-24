@@ -1,5 +1,56 @@
 # V2 development checkpoint verification
 
+## Durable execution verification: 2026-10-24
+
+Started clean at `89958d4` on `feature/v2-production-hardening`. These are source
+development checks, not evidence of an enabled production release.
+
+| Check | Actual result |
+|---|---|
+| Final Windows full suite, repository-root CI command | **248 passed, 8 skipped, 1 XFAIL**, 13.14s; skips require the isolated PostgreSQL fixture URL |
+| Final Linux full suite including real PostgreSQL, repository-root command | **256 passed, 1 XFAIL**, 12.00s; zero skips, no network outside the fixture namespace |
+| New coverage | 29 offline journal/API/migration cases and 8 PostgreSQL cases, plus two existing auth-inventory parameter cases for the new protected journal route |
+| Focused PostgreSQL | 8 passed: concurrent admission, competing recovery, row-lock deferral, stale-worker fencing, tombstones, additive migration/legacy preservation, child-process crash and live heartbeat |
+| Ruff / Python dependencies | `ruff check backend` and `pip check` pass |
+| Frontend | ESLint, TypeScript, encoding and Next production build pass. No frontend source changes. Build-generated next-env.d.ts change restored |
+| CI | Added disposable PostgreSQL job; actionlint passes locally. No hosted run or push |
+| Secrets | Configured-secret check passed for 93 candidate files; redacted Gitleaks passed on the candidate export and 15-commit pre-checkpoint history |
+| Preservation | Existing DB container IDs, start times and named mounts unchanged. Temporary PostgreSQL fixture stopped; no Docker volumes deleted. Local main remains 6bd5b32 |
+| Compose | Production configuration validates without changing or starting any service |
+| Migration | 0006 tested on new SQLite files and random schemas inside the new temporary PostgreSQL fixture only. No existing development/production migration |
+| SDK | Existing strict cancellation XFAIL unchanged. Fake SDK tests prove durable retries disabled and expired worker dispatch rejected; no live Gemini calls |
+| Image security | Not rescanned/rebuilt this continuation; prior review findings remain 9 backend / 8 frontend high, zero critical. No suppression or release-gate change |
+
+The initial combined Linux run reported 254 passes / 2 observability failures /
+1 XFAIL: in-process Alembic fixture fileConfig disabled application loggers. The
+fixture now uses a migration Config without logging side effects; 11 PostgreSQL
+and observability cases passed together before the clean full reruns. The Windows
+repository-root collection check also caught a pre-existing `tests` import-path
+problem; pytest's configured backend pythonpath now makes CI's root command work.
+An initial test invocation named a nonexistent test_database.py and ran no tests;
+the corrected initial model/config/workflow run passed 8 tests.
+
+The Linux harness uses the existing constrained review-test image with current
+app/tests/migrations/config mounted read-only, a read-only root, dropped capabilities
+and disposable tmpfs. Its only network is the new PostgreSQL fixture container's
+otherwise disconnected namespace. The new fixture has no published ports or Docker
+volume mounts. Each PostgreSQL test migrates a fresh schema; the migration-upgrade
+test seeds legacy rows only in that schema. It never selects an application DB URL.
+
+Changed files:
+
+- Service/integration: `backend/app/durable_execution.py`, `database.py`, `config.py`,
+  `main.py`, `workflow.py`, `custom_agents.py`, `custom_workflows.py`, `research.py`.
+- Schema: `backend/migrations/versions/0006_durable_executions.py` (additive only).
+- Regression/CI: `backend/tests/test_durable_execution.py`, `test_durable_postgres.py`,
+  `backend/pyproject.toml`, `.github/workflows/ci.yml`.
+- Defaults/docs: `.env.production.example`, `docs/V2_DURABLE_EXECUTION.md`,
+  `V2_ARCHITECTURE.md`, `V2_CHECKPOINT.md`, `V2_SECURITY_AUDIT.md`, this report.
+
+See [protocol and failure limits](V2_DURABLE_EXECUTION.md). Durable mode remains
+disabled pending caller/UI integration and a separately approved migration/rollout.
+No ownership migrations, pushes, merges, deployments or live database writes.
+
 ## Continuation verification: 2026-10-24
 
 Branch and all three required checkpoint commits verified before changes.

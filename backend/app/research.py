@@ -8,6 +8,7 @@ from functools import partial
 from typing import Any
 
 from app.config import Settings, settings
+from app.durable_execution import before_provider, current_lease
 from app.provider_capacity import ProviderBusyError, provider_capacity
 
 logger = logging.getLogger(__name__)
@@ -61,6 +62,8 @@ async def generate_gemini_stage(
     deadline = time.monotonic() + request_timeout
 
     def generate(timeout: float) -> tuple[str, int, int, list[dict[str, str]]]:
+        # Recheck after executor queueing; cancellation cannot stop this thread.
+        before_provider()
         from google import genai
 
         client = genai.Client(
@@ -131,7 +134,8 @@ async def generate_gemini_stage(
                 term in lowered for term in ("rate limit", "too many requests", "try again", "retry")
             )
             retryable = status == 503 or transient_429
-            if not retryable or attempt >= config.provider_retry_attempts:
+            if (not retryable or attempt >= config.provider_retry_attempts
+                    or current_lease.get() is not None):
                 from app.providers import ProviderRequestError
 
                 raise ProviderRequestError(status, message.replace(

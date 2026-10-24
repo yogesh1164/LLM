@@ -1,6 +1,34 @@
 # V2 development checkpoint
 
-## Latest continuation: 2026-10-24
+## Durable execution continuation: 2026-10-24
+
+Resumed from `89958d4` on `feature/v2-production-hardening`, initially clean.
+Implemented an opt-in execution journal, database leases, guarded state writes,
+one-use idempotency keys and startup/periodic interruption detection. Recovery
+preserves committed stage outputs/token usage and never reruns provider work.
+See [V2_DURABLE_EXECUTION.md](V2_DURABLE_EXECUTION.md) for guarantees and limits.
+
+- Additive `0006_durable_executions` creates only a new table/index. Migrations
+  were exercised on isolated SQLite and temporary PostgreSQL schemas only.
+- All paid routes (fixed/SSE/custom workflow/custom agent) are wrapped when enabled.
+  Synchronous Gemini and its cancellation XFAIL remain. Durable calls disable
+  automatic application retries. Same-key repeats never restart execution.
+- `DURABLE_EXECUTION_ENABLED` defaults false; `.env`/`.env.production` unchanged.
+  Current frontend does not yet supply durable keys or handle duplicate 202s.
+  Keep disabled for the existing deployment pending API/UI rollout review.
+- No users, ownership/backfill, credential/role changes, existing DB writes, image
+  deployment, push, merge or GitHub-main operations. Local `main` stays `6bd5b32`.
+- Latest full results and the exact candidate-file inventory are in V2_VERIFICATION.md.
+  The known image release gate remains: last review scans 9 backend / 8 frontend
+  high findings, zero critical; no new image scan or suppression in this continuation.
+
+Next work: review/rehearse the enabled API/UI key lifecycle and migration on an
+isolated target, then consider a separately approved rollout. Do not treat
+`safe_to_resubmit` as permission to automatically retry with a new key. Unknown
+provider outcomes and unjournaled legacy crash records require reconciliation.
+
+## Earlier request-limit continuation: 2026-10-24
+
 
 Verified branch `feature/v2-production-hardening` and commits `fbb4915`, `8caf560`,
 `bc9abdc` before changes. The worktree already contained unfinished Docker helper,

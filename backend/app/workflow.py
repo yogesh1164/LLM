@@ -8,6 +8,7 @@ from typing import Any
 from app.agents import build_agents
 from app.config import settings
 from app.database import fail_stage, finish_stage, start_stage, update_task
+from app.durable_execution import before_provider
 from app.observability import execution_context
 from app.providers import run_agent_stage
 from app.schemas import SourceReference, WorkflowResponse
@@ -70,6 +71,7 @@ async def _run_workflow(task: str, task_id: str, progress: Progress | None = Non
                 if progress:
                     await progress({"type": "stage_retry", "agent": stage_name, **info})
             try:
+                before_provider()
                 run = await asyncio.wait_for(
                     run_agent_stage(agents[name], prompt,
                                     timeout_seconds=effective_timeout, on_retry=retry_progress),

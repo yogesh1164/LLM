@@ -6,7 +6,7 @@ import time
 from datetime import UTC, datetime
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -25,6 +25,7 @@ from app.database import (
     CustomWorkflowStep,
     CustomWorkflowStepRun,
 )
+from app.durable_execution import attach, before_provider, execution, guard
 from app.provider_capacity import ProviderBusyError
 from app.providers import ProviderConfigurationError, ProviderRequestError, run_custom_gemini_agent
 
@@ -145,6 +146,7 @@ def list_runs(workflow_id: UUID) -> list[WorkflowRunRead]:
 
 def _save_step(run_id: UUID, position: int, **fields) -> None:
     with database.SessionLocal.begin() as session:
+        guard(session)
         row = session.scalar(select(CustomWorkflowStepRun).where(
             CustomWorkflowStepRun.run_id == run_id, CustomWorkflowStepRun.position == position))
         if row is None:
@@ -155,6 +157,7 @@ def _save_step(run_id: UUID, position: int, **fields) -> None:
 
 def _finish_run(run_id: UUID, status: str, *, result: str | None = None, error: str | None = None) -> WorkflowRunRead:
     with database.SessionLocal.begin() as session:
+        guard(session)
         row = session.scalar(select(CustomWorkflowRun).options(selectinload(CustomWorkflowRun.steps))
             .where(CustomWorkflowRun.id == run_id))
         if row is None:
@@ -181,6 +184,7 @@ async def _execute(run_id: UUID, task: str, agents: list[dict]) -> WorkflowRunRe
         _save_step(run_id, position, status="running")
         started = time.monotonic()
         try:
+            before_provider()
             result = await asyncio.wait_for(run_custom_gemini_agent(
                 name=agent["name"], instructions=agent["instructions"], prompt=prompt,
                 model=agent["model"], temperature=agent["temperature"],
@@ -225,7 +229,9 @@ async def _execute(run_id: UUID, task: str, agents: list[dict]) -> WorkflowRunRe
     return _finish_run(run_id, "completed", result=last_output)
 
 @router.post("/{workflow_id}/execute", response_model=WorkflowRunRead)
-async def execute_definition(workflow_id: UUID, body: WorkflowRunInput) -> WorkflowRunRead:
+@execution("custom_workflow")
+async def execute_definition(workflow_id: UUID, body: WorkflowRunInput,
+                             http_request: Request = None) -> WorkflowRunRead:
     with database.SessionLocal.begin() as session:
         name, agents = _snapshot(session, workflow_id)
         run = CustomWorkflowRun(workflow_id=workflow_id, workflow_name=name, task=body.task)
@@ -235,4 +241,5 @@ async def execute_definition(workflow_id: UUID, body: WorkflowRunInput) -> Workf
         session.add(run)
         session.flush()
         run_id = run.id
+        attach(session, "workflow_run_id", run_id)
     return await _execute(run_id, body.task, agents)

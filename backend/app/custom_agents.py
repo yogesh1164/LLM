@@ -6,7 +6,7 @@ import time
 from datetime import UTC, datetime
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import ValidationError
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -24,6 +24,7 @@ from app.custom_agent_schemas import (
     configured_models,
 )
 from app.database import CustomAgent, CustomAgentExecution
+from app.durable_execution import attach, before_provider, execution, guard
 from app.provider_capacity import ProviderBusyError
 from app.providers import ProviderConfigurationError, ProviderRequestError, run_custom_gemini_agent
 
@@ -81,6 +82,7 @@ def _start_execution(agent: CustomAgent, task: str) -> UUID:
         )
         session.add(execution)
         session.flush()
+        attach(session, "agent_execution_id", execution.id)
         return execution.id
 
 
@@ -88,6 +90,7 @@ def _finish_execution(execution_id: UUID, *, status_value: str, elapsed_ms: int,
                       result: str | None = None, error: str | None = None,
                       input_tokens: int | None = None, output_tokens: int | None = None) -> CustomAgentExecutionRead:
     with database.SessionLocal.begin() as session:
+        guard(session)
         execution = session.get(CustomAgentExecution, execution_id)
         if execution is None:
             raise RuntimeError("Custom agent execution record was not found")
@@ -124,6 +127,7 @@ async def _execute_saved_agent(agent: CustomAgent, task: str) -> CustomAgentExec
     execution_id = _start_execution(agent, task)
     started = time.monotonic()
     try:
+        before_provider()
         result = await asyncio.wait_for(
             run_custom_gemini_agent(
                 name=validated.name,
@@ -208,7 +212,9 @@ def list_agent_executions(agent_id: str) -> list[CustomAgentExecutionRead]:
 
 
 @router.post("/{agent_id}/execute", response_model=CustomAgentExecutionRead)
-async def execute_agent(agent_id: str, request: CustomAgentExecutionRequest) -> CustomAgentExecutionRead:
+@execution("custom_agent")
+async def execute_agent(agent_id: str, request: CustomAgentExecutionRequest,
+                        http_request: Request = None) -> CustomAgentExecutionRead:
     with database.SessionLocal() as session:
         agent = _get_agent(session, agent_id)
     return await _execute_saved_agent(agent, request.task)

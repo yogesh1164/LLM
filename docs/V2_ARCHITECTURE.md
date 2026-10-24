@@ -77,7 +77,17 @@ provide session storage, login limits or a complete account service.
    reconcile post-cutover writes before switching. Older code cannot safely read
    multi-user records through an unrestricted bearer path.
 
-## Durable execution design (schema decision pending)
+## Durable execution foundation (implemented, opt-in, not deployed)
+
+See [V2_DURABLE_EXECUTION.md](V2_DURABLE_EXECUTION.md) for the implemented journal,
+lease/fencing protocol, API contract, additive 0006 migration, recovery guarantees
+and known failure cases. Defaults remain off. No existing database has been migrated.
+The backend has startup/periodic expiry detection and one-use idempotency keys;
+recovery never replays a paid call. Current browser key/202 handling remains a rollout
+prerequisite. Account/ownership approval is still pending independently.
+
+The original design below remains context for future owner-aware jobs/continuation;
+it is not a claim that a resumable background queue has been implemented.
 
 Execution currently persists steps and partial results, but the request owns work.
 Add a jobs table with owner, operation, request digest, unique(owner, operation,
@@ -98,7 +108,9 @@ positions, including transport progress failures and a child process exiting wit
 cleanup. Committed output/token history survives and reads do not trigger replay.
 Completed stages retain their status if a progress consumer fails. The process-exit
 test explicitly demonstrates that unfinished records still remain `running`; these
-tests do not implement a durable queue, leases, idempotency or automatic recovery.
+tests at checkpoint 89958d4 did not implement leases or idempotency. The newer
+foundation adds journaled lease recovery and duplicate protection, not a durable
+queue or automatic continuation.
 
 ## Deployment and observability decisions
 

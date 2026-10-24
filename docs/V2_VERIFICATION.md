@@ -1,5 +1,69 @@
 # V2 development checkpoint verification
 
+## Incomplete release candidate continuation: 2026-10-24
+
+Preservation checkpoint: `09d55e9b8431e5cc463073843b68a9d30d0a63a8`, based on
+`519fd72edc91ea1cf6de82b48595612e893c2c2d`. Exactly 38 reviewed files were committed
+after configured-secret scanning, candidate-export Gitleaks and a 17-commit
+history scan passed. Real dotenv files, backup archives, TLS material and ignored
+operational evidence were excluded. The checkpoint explicitly says incomplete.
+
+| Current validation | Actual result |
+|---|---|
+| Full Linux/Trixie backend, new tmpfs PostgreSQL | **319 passed, 1 XFAIL**, 45.87s; zero skips/failures |
+| Full Windows backend | **291 passed, 28 PostgreSQL skips, 1 XFAIL**, 40.03s |
+| Focused PostgreSQL accounts | **7 passed**, including three new subprocess crash cases |
+| Combined account/durable browser rehearsal | **32 passed**, no skips/failures; seven fake SDK calls only |
+| Frontend static/dependencies | ESLint, app and test TypeScript, nine-file UTF-8 check pass; npm audit zero vulnerabilities |
+| Backend static/dependencies | Ruff and pip check pass; pip-audit of pinned final-image runtime inventory reports no known vulnerabilities |
+| Configuration | Base, combined account+limits, durable-enabled and durable-disabled Compose validate without starting services; Hadolint error threshold and actionlint pass |
+| Images | Both separate Trixie review image builds pass; no production tags selected |
+| Runtime smoke | Non-root/read-only standalone frontend HTTP 200; SDK 2.31.0, legacy/durable-off defaults and system CA trust verified; both Debian libz hashes match |
+| Operator syntax | 20 PowerShell blocks parse without execution |
+| Image security | **BLOCKED**: one HIGH CVE-2026-85091 in each image, zero CRITICAL; source applicability investigation does not waive the finding |
+
+Ignored current evidence: `backups/v2-final-linux-tests.log`,
+`v2-final-windows-tests.log`, `v2-final-python-audit.json`, `v2-final-*.sarif` and
+`agentflow-v2-durable-e2e-accounts-20261024065142/{report.json,frontend-tests.log}`.
+The Python audit excludes editable application metadata and build tools; it uses
+the installed runtime package inventory. Constraints are version pins, not hashes.
+No hosted Actions or production acceptance result is claimed.
+
+The three PostgreSQL account crash cases use `os._exit(23)` in a child process:
+before provider dispatch, after one committed stage, and after task completion
+before journal finalization. They revoke the owner's session before four competing
+recovery workers run, prove recovery is idempotent, preserve owner/partial output/
+token accounting, deny user B access/deletion, and return the existing journal
+on A's same-key API retry. B's same key obtains a distinct scoped reservation.
+No real provider adapter is invoked. Process fixtures validate an exact disposable
+database identity and use new per-test PostgreSQL schemas.
+
+The account browser regressions now cover login/reload/password/logout, service
+failure, expiry, bad credentials/throttling, cross-tab logout and owner-switch
+metadata clearing. The earlier self-broadcast reload loop is fixed. The initial
+combined runtime fixture missed the browser's synthetic login cookie; sharing its
+cookie context corrected that harness failure before the final 32-pass run.
+
+Warnings: 18 SQLite expression-index reflection warnings; the preserved synchronous
+Gemini cancellation XFAIL; harmless Node color-environment warnings. PostgreSQL
+index/constraint behavior is covered separately. The zlib investigation and
+limitations are in [V2_IMAGE_TRIAGE.md](V2_IMAGE_TRIAGE.md).
+
+No existing database was migrated, restored or accessed by the fixture tests.
+New fixtures use tmpfs and mount source read-only. No volumes were deleted or
+modified by an operator command. Production/development container identities,
+start times, image IDs and mounts plus real dotenv hashes are compared separately;
+that preservation check is not a production database content-digest audit.
+Final comparison passes for all five existing service containers and three real
+dotenv files. Only newly created, identified fixtures are stopped; no volume is
+deleted. Image scan command success means a report was produced, not a clean gate.
+
+The current combined deployment contract is
+[V2_ACCOUNTS_ROLLOUT.md](V2_ACCOUNTS_ROLLOUT.md) and its inactive
+`deploy/compose.accounts.yml`. All following sections are historical evidence.
+
+## Historical verification
+
 ## Completed frontend and isolated activation: 2026-10-24
 
 Started clean on `feature/v2-production-hardening` at `259624a`. Baseline verified

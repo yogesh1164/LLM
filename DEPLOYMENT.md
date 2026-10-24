@@ -9,6 +9,10 @@ durable execution is activated on the existing deployment. The historical V2
 foundation description below predates these changes. Do not use `upgrade head`
 for a durable-only rollout; explicitly select 0006 or separately review 0007.
 Current review Dockerfiles use pinned Trixie bases; image security remains gated.
+The inactive combined overlay is `deploy/compose.accounts.yml`. Final local
+account/durable browser and PostgreSQL recovery tests pass; latest image scans
+retain one high zlib finding each. See the current verification/checkpoint sections
+before using historical commands. The operator procedure is prepared, not executed.
 
 The verification below describes the released V1 private deployment. The V2 feature
 branch adds offline-tested worker admission, cancellation persistence, JSON

@@ -1,7 +1,7 @@
 """Rehearse account + durable browser execution on NEW tmpfs fixtures only.
 
 No restore, real dotenv file, existing database or provider call is involved.
-Run from the repository root with backend/.venv/Scripts/python.exe.
+From backend: .venv/Scripts/python.exe -m tests.verify_accounts_runtime.
 """
 import json
 import os

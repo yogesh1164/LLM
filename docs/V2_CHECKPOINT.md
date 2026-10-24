@@ -1,5 +1,42 @@
 # V2 development checkpoint
 
+## Current incomplete release candidate: 2026-10-24
+
+Preserved all 38 original modified/untracked files in local checkpoint
+`09d55e9b8431e5cc463073843b68a9d30d0a63a8` after candidate and history secret scans.
+No production-ready claim, push, merge, deployment or production activation.
+Continuation adds real PostgreSQL account-aware subprocess crash/recovery tests,
+zlib source applicability evidence, final local validation and an inactive combined
+account/durable deployment overlay. See [verification](V2_VERIFICATION.md).
+
+Current results: Linux/Trixie **319 passed / 1 XFAIL**; Windows **291 passed /
+28 PostgreSQL skips / 1 XFAIL**; combined browser **32 passed**. Final image scans
+remain **one HIGH per image, zero CRITICAL**. This supersedes older 9/8 counts.
+The main route/account/frontend implementation is complete and tested locally.
+Never rerun completed development or synthetic restore drills merely to resume.
+
+Remaining release gates:
+
+1. Vendor-supported zlib remediation or separately accepted applicability review;
+   no scanner suppression or security waiver has been enabled.
+2. Production runtime database least privilege and encrypted off-host backup/key
+   custody/retention acceptance; these operational changes remain unauthorized.
+3. Explicit legacy ownership, maintenance/cutover and recovery decisions; private
+   HTTPS account acceptance and hosted CI have not been executed for this release.
+4. Known synchronous Gemini cancellation/unknown upstream outcomes, single-process
+   admission and lack of distributed spending budgets remain documented limits.
+
+Effort-weighted readiness estimate: **92% complete, 8% remaining**, using durable
+15%, accounts 25%, image security 15%, combined integration 20%, final checks 10%,
+rollout docs 10%, review/checkpoint 5%. This is an engineering estimate, not a test
+pass percentage or production approval. Production readiness remains **NOT READY**.
+The component estimates are 90%, 95%, 85%, 95%, 90%, 90%, 95% respectively;
+their weighted sum is 91.75%, rounded to 92%. Vendor waiting and production
+operational changes are not counted as completed by local functional tests.
+All following sections retain historical context and do not supersede this status.
+
+## Historical checkpoints
+
 ## Completed isolated integration: 2026-10-24
 
 Resumed clean from `259624a` on `feature/v2-production-hardening`. Frontend key

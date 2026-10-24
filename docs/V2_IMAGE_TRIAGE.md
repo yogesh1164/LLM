@@ -1,5 +1,46 @@
 # V2 review-image vulnerability triage
 
+## Current Trixie review: 2026-10-24
+
+The current Dockerfiles use pinned Python 3.12 / Node 22 Trixie bases. Separate
+`v2-accounts-resume-review` image builds pass. Scout reports **one HIGH and zero
+CRITICAL in each image**, reduced from nine backend/eight frontend highs on the
+earlier Bookworm images. All currently reported findings are CVE-2026-85091 for
+Debian zlib. No suppression, metadata deletion, scanner override or waiver exists.
+The high-severity release gate remains **blocked**.
+
+Primary-source investigation found:
+
+- Installed backend package: `zlib1g 1:1.3.dfsg+really1.3.1-1+b1`; runtime 1.3.1.
+  Its `/usr/lib/x86_64-linux-gnu/libz.so.1.3.1` SHA-256 is
+  `85590dd58edf5445e18bc7193e5ebc01ac5841f1ae187e97705a662e90c6421e`.
+  Final inspection confirms the frontend's Debian libz has the identical hash.
+- Downloaded Debian source archives match their `.dsc` SHA-256 entries. All five
+  `gz*.[ch]` source files match upstream v1.3.1 byte for byte. Neither `gz_vacate`
+  nor `state->again` occurs in those files. The Debian patch series is empty.
+- In that older writer, negative `write()` results produce fatal `Z_ERRNO`;
+  `gzvprintf` returns when compression fails before its following `memmove`.
+  The later retryable non-blocking implementation is a materially different path.
+- Debian's CVE description names versions 1.3.1.2-1.3.2 and links the introducing
+  [upstream commit](https://github.com/madler/zlib/commit/81cc0bebedd935daeb81b0b6e475d8786b51af3d),
+  yet its [tracker](https://security-tracker.debian.org/tracker/CVE-2026-85091)
+  still classifies the Trixie package as vulnerable/unfixed.
+
+This supports a possible affected-version classification mismatch; it is **not**
+accepted vendor adjudication, proof for every embedded copy, or a clean scan.
+Source retrieval used HTTPS and hashes from the Debian `.dsc`; independent signed
+index/signature verification was not performed. Evidence is retained locally at
+`backups/v2-zlib-source-evidence/report.json`, including source hashes. Upstream
+source was read, not patched or installed. No vendor issue/comment was submitted.
+
+Backend Python reports OpenSSL 3.5.7; frontend Node reports OpenSSL 3.5.9 and its
+separate embedded zlib `1.3.1-e00f703`. The Node embedded copy is outside the Debian
+binary comparison. Both final images retain package metadata and have no
+setuid/setgid regular files. Obtain a vendor-supported correction/patched package
+or a separately accepted applicability review; do not silently waive the gate.
+
+## Historical Bookworm investigation
+
 Reviewed 2026-10-24. Scope: separate, undeployed `v2-review-hardening` images
 on the existing Bookworm digest pins. These findings do not describe a newly
 scanned V1 production image. No scanner exceptions or package metadata removal.

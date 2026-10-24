@@ -12,6 +12,15 @@ default and remains unsuitable for multi-user access. See
 Both review Dockerfiles now use pinned Trixie images. Final advisory evidence and
 remaining zlib gate are in [V2_IMAGE_TRIAGE.md](V2_IMAGE_TRIAGE.md).
 
+Current release residuals: **one HIGH zlib finding per review image, zero CRITICAL**;
+runtime DB role separation and encrypted off-host backup operations remain open;
+production account cutover and hosted CI acceptance remain unexecuted. Current
+local tests are 319 Linux backend passes plus one known XFAIL and 32 combined
+frontend passes. Account-aware PostgreSQL subprocess recovery is now verified.
+The source classification mismatch is evidence for vendor review, not a waiver.
+
+## Historical baseline findings
+
 Audit date: 2026-10-23. Starting revision: `6bd5b32` (merged private MVP).
 `main` was clean, fetched, and 0 commits ahead/behind `origin/main` before creating
 `feature/v2-production-hardening`. No live schema, credential or volume changes.

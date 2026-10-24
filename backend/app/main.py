@@ -25,6 +25,7 @@ from app.database import (
 from app.observability import RequestTelemetry, configure_production_logging
 from app.provider_capacity import ProviderBusyError
 from app.providers import ProviderConfigurationError, validate_provider
+from app.request_limits import RequestBodyLimit
 from app.schemas import (
     DashboardResponse,
     ExecutionResponse,
@@ -80,7 +81,9 @@ async def require_api_token(request: Request, call_next):
             return JSONResponse({"detail": "API access token is not configured"}, status_code=503)
         provided = request.headers.get("authorization", "")
         expected = configured.get_secret_value()
-        if not provided.startswith("Bearer ") or not hmac.compare_digest(provided[7:], expected):
+        if not provided.startswith("Bearer ") or not hmac.compare_digest(
+            provided[7:].encode("utf-8"), expected.encode("utf-8")
+        ):
             return JSONResponse({"detail": "Authentication required"}, status_code=401,
                                 headers={"WWW-Authenticate": "Bearer"})
     if request.method == "POST" and (
@@ -331,7 +334,7 @@ async def remove_task(task_id: str) -> Response:
 # Wrap the complete ASGI app so CORS headers are also present on unhandled 500 responses.
 # This keeps browser diagnostics useful while still returning the real server error.
 app = CORSMiddleware(
-    app=app,
+    app=RequestBodyLimit(app, lambda: settings.max_request_body_bytes),
     allow_origins=settings.allowed_frontend_origins,
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],

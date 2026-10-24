@@ -93,6 +93,13 @@ capacity now bounds live synchronous workers including cancelled callers; it is
 not a durable queue or distributed limiter. The documented synchronous-cancellation
 XFAIL remains. A cancelled task may still incur upstream cost until SDK timeout.
 
+2026-10-24 offline verification expands interruption coverage at multiple stage
+positions, including transport progress failures and a child process exiting without
+cleanup. Committed output/token history survives and reads do not trigger replay.
+Completed stages retain their status if a progress consumer fails. The process-exit
+test explicitly demonstrates that unfinished records still remain `running`; these
+tests do not implement a durable queue, leases, idempotency or automatic recovery.
+
 ## Deployment and observability decisions
 
 JSON logging allows only generated IDs, registered route templates, status and

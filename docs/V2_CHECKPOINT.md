@@ -1,4 +1,36 @@
-# Resume after usage reset
+# V2 development checkpoint
+
+## Latest continuation: 2026-10-24
+
+Verified branch `feature/v2-production-hardening` and commits `fbb4915`, `8caf560`,
+`bc9abdc` before changes. The worktree already contained unfinished Docker helper,
+request-budget and interruption-test changes; reviewed and completed these locally.
+`main` remains `6bd5b32`. No push, merge, deployment or account/ownership migration.
+
+- API bodies now default to a 256 KiB cap before parsing/endpoint side effects,
+  including undeclared/chunked input. Malformed/duplicate lengths are rejected.
+  Non-ASCII bearer input returns 401 instead of a comparison exception.
+- Progress interruptions close newly started stages and preserve already committed
+  stage outputs, status and token accounting. No Gemini rewrite or paid calls.
+- Added cancellation/timeout/capacity interruption tests and a subprocess crash
+  fixture proving committed history survives without implicit provider replay.
+  Crashed work still remains `running`; durable jobs/leases are not implemented.
+- Both Docker runtime stages strip setuid/setgid regular-file bits. Root inspection
+  confirms none remain; actual application users stay non-root. Package metadata
+  remains intact. See [image triage](V2_IMAGE_TRIAGE.md): mitigations do not patch
+  the unresolved Debian packages or clear the image release gate.
+- Full backend suite: **217 passed, 1 XFAIL** on Windows and in the isolated Linux
+  review image. Ruff, pip check, frontend lint/TypeScript/encoding/build, Compose
+  validation, Dockerfile lint and redacted Git-history scanning pass.
+- Separate `v2-review-hardening` app images rebuilt; no production tags replaced.
+  Backend Scout still reports **9 high findings**; frontend reports **8**.
+  Full verification/evidence details are in V2_VERIFICATION.md.
+
+The approval gate below is unchanged. Next safe work is supported image-component
+remediation, then isolated durable-job design/tests. Do not auto-replay unknown
+provider outcomes or activate multi-user mode. Do not rerun restore drills.
+
+## Original checkpoint: 2026-10-23
 
 Read this file, V2_SECURITY_AUDIT.md, V2_ARCHITECTURE.md and V2_VERIFICATION.md
 before further work. This checkpoint was requested by the operator to stop safely.

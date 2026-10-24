@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     )
     task_retention_days: int = Field(default=0, ge=0, le=3650)
     rate_limit_per_minute: int = Field(default=10, ge=1, le=600)
+    max_request_body_bytes: int = Field(default=262_144, ge=1024, le=1_048_576)
     input_token_cost_per_million: float = Field(default=0.25, ge=0)
     cached_input_token_cost_per_million: float = Field(default=0.025, ge=0)
     output_token_cost_per_million: float = Field(default=2.0, ge=0)

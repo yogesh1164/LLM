@@ -23,7 +23,8 @@ is historical; it does not validate the new feature branch.
 | Medium | `frontend/src/app/ResultsPanel.tsx` | Model Markdown could load external images, leaking client address/referrer or contacting internal browser-reachable hosts. Images now render as text; citations use existing safe URL filter. Raw HTML remains disabled. |
 | Medium | `backend/app/agents.py`, `workflow.py`, `custom_workflows.py` | User tasks, search material and preceding model outputs are untrusted context. Prompt instructions are not authorization. No arbitrary shell/SQL tool is exposed; grounding is explicit opt-in. Model output must not trigger privileged actions. Injection-resistant correctness is not guaranteed. |
 | Medium | Dockerfiles, Python dependencies, Compose image tags | V2 app base images are now digest pinned; runtime versions are constrained from the tested Linux image. Gemini remains 2.31.0. Constraints are not hash-verified; build tools and Compose infrastructure tags remain follow-ups. |
-| High, unresolved | V2 review image Docker Scout reports | Backend: 9 high advisories across 4 Debian packages. Frontend: initially 18 across 10 packages; removing unused runtime npm/Corepack/Yarn reduced this to 8 across 3 Debian packages. Remaining findings report no fixed version. No suppressions added; image security gate remains a release blocker pending vendor/reachability triage. |
+| High, unresolved | V2 review image Docker Scout reports | Backend: 9 high advisories across 4 Debian packages. Frontend: initially 18 across 10 packages; removing unused runtime npm/Corepack/Yarn reduced this to 8 across 3 Debian packages. Runtime setuid/setgid bits now removed and vendor/reachability evidence recorded in V2_IMAGE_TRIAGE.md. These mitigations do not patch packages. No suppressions; image security gate remains a release blocker. |
+| Medium, mitigated in V2 source | `app/request_limits.py`, `main.py` | Default 256 KiB API body cap before JSON parsing or endpoint effects, including undeclared/chunked bodies; malformed/duplicate Content-Length rejected. Limit responses retain CORS, no-store and request IDs. This is a per-request byte budget, not a slow-client/global admission limit. |
 | Medium | `DEPLOYMENT.md` backup procedure | Verified local recovery does not supply encrypted off-host retention, automated schedules or measured RPO/RTO. Dumps contain private content. Operator-selected destination/key custody required; no upload/schedule configured. |
 | Moderate dependency advisory | Installed pytest 8.4.2, old `<9` constraint | UNIX temporary-directory issue; changed development constraint to >=9.0.3,<10; tested 9.1.1. Not a runtime dependency. [GHSA-6w46-j5rx-g56g](https://github.com/advisories/GHSA-6w46-j5rx-g56g). |
 | Low/operational | Caddy internal CA, local bind; `deploy/Caddyfile` | Private root trust must be explicit per device. Listener remains loopback-only. No automatic Windows trust-store changes. No remote client/private DNS verification in this phase. |
@@ -52,7 +53,8 @@ missing and invalid bearer rejection for every documented sensitive route/method
 SQLAlchemy queries bind values; the inspected `text()` uses are static readiness
 and index expressions, not concatenated request SQL. UUIDs, lengths, provider/model
 allowlists and field ranges constrain inputs. List endpoints and request-body
-transport size lack comprehensive resource budgets; pagination/body limits remain
+transport size previously lacked comprehensive resource budgets. V2 now bounds API
+body bytes; pagination, concurrent request budgets and slow-client handling remain
 before broader access. Model-call limits count stages; retries add upstream calls.
 
 Production docs are disabled in FastAPI and blocked by Caddy. Explicit HTTPS CORS

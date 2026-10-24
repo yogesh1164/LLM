@@ -1,5 +1,41 @@
 # V2 development checkpoint verification
 
+## Continuation verification: 2026-10-24
+
+Branch and all three required checkpoint commits verified before changes.
+Existing uncommitted work was reviewed, completed and tested. No account/ownership
+schema changes, production writes, pushes, merges, deployments or paid AI calls.
+
+| Check | Actual result |
+|---|---|
+| Focused backend regression run | **41 passed**; interruption recovery, workflow and request limits; Ruff passes |
+| Full Windows backend suite | **217 passed, 1 XFAIL** in 58.01s; Ruff and pip check pass |
+| Full Linux rebuilt-image suite | **217 passed, 1 XFAIL** in 25.75s; no network, read-only root, disposable tmpfs and SQLite, no database mounts |
+| Sandbox limitation | Initial focused run: 27 passed, 1 temp-directory permission error. Host rerun: 28 passed before six additional progress regression cases were added |
+| Frontend source | ESLint, TypeScript, encoding and production build pass |
+| Image builds | Separate backend/frontend `v2-review-hardening` tags built; V1 `:local` tags untouched |
+| Image scans | Backend: **9 high / 0 critical**, four Debian source packages. Frontend: **8 high / 0 critical**, three Debian source packages. Release gate remains blocked; no exceptions |
+| Runtime helper permissions | Corrected root inspection passes on both rebuilt images: no setuid/setgid regular files; users remain UID 10001/1000 |
+| Frontend runtime | Network-isolated non-root container with read-only root: HTTP 200, no browser localhost API, no npm/Corepack/Yarn |
+| Static infrastructure | Both Compose configurations validate; both Dockerfiles pass Hadolint at error threshold |
+| Git history secrets | Redacted Gitleaks: 14 commits, no leaks before the new checkpoint |
+| Candidate configured-secret scan | 88 candidate source files passed; private environment files and operational evidence remain excluded |
+| V1 HTTPS read-only check | Explicit local CA validation: root/health/ready 200; dashboard 401 unauthenticated and 200 authenticated |
+| Database preservation | Development ID `3eea02ed0717`, production ID `20505198dfda`; start times and volume mounts unchanged during this continuation |
+| Remote CI | Still not run; branch remains unpushed |
+
+New ignored evidence: `backups/v2-backend-resume-build.log`,
+`v2-frontend-resume-build.log`, `v2-resume-linux-test-build.log`,
+`v2-backend-resume-scout.sarif`, `v2-frontend-resume-scout.sarif` and existing
+`v2-hardening-image-check.py` / `.mjs` inspection helpers. No operational artifacts
+are to be committed. See [vendor/runtime triage](V2_IMAGE_TRIAGE.md) for all nine CVEs.
+
+Rebuilt review image IDs: backend
+`sha256:44b73e8c70e254225408b3c501d5d960fe7981edbb3168a5b2cc5619f00673b5`,
+frontend `sha256:56f5d714fa61a3dab6ef45bd8e323a5732327d10a99e1866126ae26e6e08dd9d`.
+
+## Historical verification: 2026-10-23
+
 Date: 2026-10-23. Branch: `feature/v2-production-hardening`; base `6bd5b32`.
 This is a development checkpoint, not a production release. No V2 deployment,
 production writes, migrations, credential changes, pushes or merges were made.

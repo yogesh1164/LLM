@@ -54,9 +54,10 @@ async def _run_workflow(task: str, task_id: str, progress: Progress | None = Non
         effective_timeout = min(stage_timeout, max(0.001, remaining_total))
         stage_id = start_stage(task_id, stage_name)
         started = time.monotonic()
-        if progress:
-            await progress({"type": "stage", "agent": stage_name, "status": "running"})
+        stage_completed = False
         try:
+            if progress:
+                await progress({"type": "stage", "agent": stage_name, "status": "running"})
             if len(prompt) > settings.max_stage_input_chars:
                 raise RuntimeError(
                     f"{stage_name} input exceeded the configured "
@@ -93,6 +94,9 @@ async def _run_workflow(task: str, task_id: str, progress: Progress | None = Non
             finish_stage(stage_id, output=output, input_tokens=run.input_tokens,
                          output_tokens=run.output_tokens, elapsed_ms=elapsed_ms)
             save_partial()
+            # A disconnected progress consumer must not rewrite committed work
+            # as cancelled/failed or make it appear safe to repeat a paid call.
+            stage_completed = True
             if progress:
                 await progress({"type": "stage", "agent": stage_name, "status": "completed",
                                 "output": output, "elapsed_ms": elapsed_ms})
@@ -103,7 +107,8 @@ async def _run_workflow(task: str, task_id: str, progress: Progress | None = Non
             status = "timed_out" if total_timeout else "cancelled"
             reason = (f"Workflow exceeded its {settings.workflow_timeout_seconds}s total timeout"
                       if total_timeout else "Stage cancelled because the workflow was cancelled")
-            fail_stage(stage_id, reason, status=status, elapsed_ms=elapsed_ms)
+            if not stage_completed:
+                fail_stage(stage_id, reason, status=status, elapsed_ms=elapsed_ms)
             if progress:
                 await progress({"type": "stage", "agent": stage_name, "status": status,
                                 "error": reason if total_timeout else None, "elapsed_ms": elapsed_ms})
@@ -114,8 +119,9 @@ async def _run_workflow(task: str, task_id: str, progress: Progress | None = Non
             message = ("Agent stage failed. Check provider settings and try again."
                        if settings.app_env == "production" and not timed_out
                        else str(exc) or "Agent stage failed")
-            fail_stage(stage_id, message,
-                       status="timed_out" if timed_out else "failed", elapsed_ms=elapsed_ms)
+            if not stage_completed:
+                fail_stage(stage_id, message,
+                           status="timed_out" if timed_out else "failed", elapsed_ms=elapsed_ms)
             if progress:
                 await progress({"type": "stage", "agent": stage_name,
                                 "status": "timed_out" if timed_out else "failed",

@@ -16,6 +16,9 @@ COPY --from=builder /opt/venv /opt/venv
 COPY app ./app
 COPY alembic.ini ./
 COPY migrations ./migrations
+# No runtime operation needs setuid/setgid helpers. Keep package metadata intact
+# for scanners; this reduces privilege-escalation paths, not advisory counts.
+RUN find / -xdev -type f -perm /6000 -exec chmod a-s {} +
 USER 10001:10001
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/ready', timeout=3)"

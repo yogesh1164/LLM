@@ -1,5 +1,25 @@
 # V2 review-image vulnerability triage
 
+## Latest rebuilt candidates and vendor-status review — 2026-10-24
+
+The newest immutable review images were scanned by Docker Scout 1.26.0 after
+verifying the expected image IDs. Backend `sha256:5bd868922bf34d44126f4b8c97243216d5cf5245c48d1243b7b3260046077c26` (amd64, uid 10001, Debian `zlib1g 1:1.3.dfsg+really1.3.1-1+b1`) reports **1 HIGH, 0 CRITICAL, 6 MEDIUM, 27 LOW**. Frontend `sha256:1b07add53c68f430329b58cc8f00920c9ef4f5baa3909405e030750c457fbfe6` (amd64, user `node`, same system zlib package) reports **1 HIGH, 0 CRITICAL, 1 MEDIUM, 26 LOW**. The sole HIGH in each is CVE-2026-85091. Both gates fail.
+
+Rechecking Debian's tracker and security-tracker history found a genuine
+classification dispute: the CVE description identifies the nonblocking gz writer
+code introduced after upstream v1.3.1, and the packaged Trixie source comparison
+does not contain `gz_vacate` or `state->again`; however, the Debian security team
+explicitly recorded that it conservatively kept Trixie affected while awaiting
+upstream/maintainer confirmation because it believed the overflow could predate
+that code. Therefore this is **not** a proven false positive. The current Debian
+tracker still marks Trixie vulnerable/unfixed; signed Trixie package metadata
+offers no newer candidate. Upstream has a corrective commit, but no supported
+Debian package carrying it was available. The Node embedded zlib copy has not been
+vendor-adjudicated. Keep the combined finding **UNRESOLVED / NOT ACCEPTED**; do not
+suppress it. See the [formal assessment](V2_ZLIB_RISK_ASSESSMENT.md).
+
+Primary references: [Debian CVE tracker](https://security-tracker.debian.org/tracker/CVE-2026-85091), [Debian security-tracker status rationale](https://mail-archive.com/debian-security-tracker-commits%40alioth-lists.debian.net/msg86712.html), [upstream fix](https://github.com/madler/zlib/commit/df84af25dc1942490e1d1c899a07619152a46148), and [upstream introduction of nonblocking gzip I/O](https://github.com/madler/zlib/commit/81cc0bebedd935daeb81b0b6e475d8786b51af3d).
+
 ## Final production-readiness scan: 2026-10-24
 
 Fresh scans of backend `v2-mission-review` and frontend

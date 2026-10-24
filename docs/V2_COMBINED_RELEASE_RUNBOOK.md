@@ -1,5 +1,19 @@
 # Combined V2 release, rollback and emergency recovery
 
+## Latest blocker status — 2026-10-24
+
+Latest immutable image scans retain **1 HIGH / 0 CRITICAL** in each image for
+CVE-2026-85091; risk remains unresolved and unaccepted. Encrypted 300 MiB
+age/X25519 streaming and 15-table synthetic restore passed only with an isolated
+local destination. Off-host storage, production schedules, key-custody continuity
+and accepted recovery objectives remain unconfigured. PostgreSQL runtime-role
+separation and ownership assignment are prepared and tested in isolation only;
+the production read-only role audit found an overprivileged existing login at
+revision 0005. No production role, migration or ownership change is authorized by
+this runbook. See [release evidence](V2_RELEASE_EVIDENCE.md),
+[role dry-run](V2_DATABASE_ROLE_DRY_RUN.md) and
+[ownership mapping](V2_OWNERSHIP_ROLLOUT.md).
+
 This runbook is prepared but inactive. It does not authorize deployment, changes
 to existing roles/databases, legacy ownership assignment, or feature activation.
 All preparation in this continuation used new synthetic fixtures. Keep the V1

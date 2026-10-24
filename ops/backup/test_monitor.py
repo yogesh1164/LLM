@@ -26,11 +26,12 @@ def test_key_creation_does_not_overwrite(tmp_path):
     assert path.read_bytes() == original
 
 
-def test_monitor_fresh_stale_missing_and_corrupt(tmp_path):
+@pytest.mark.parametrize("suffix", [".fernet", ".age"])
+def test_monitor_fresh_stale_missing_and_corrupt(tmp_path, suffix):
     now = datetime.now(UTC)
     with pytest.raises(tool.BackupError):
         monitor.check(tmp_path, now=now)
-    artifact = tmp_path / "agentflow-example.fernet"
+    artifact = tmp_path / ("agentflow-example" + suffix)
     artifact.write_bytes(b"synthetic-encrypted-placeholder")
     manifest = {"artifact": artifact.name, "created_utc": now.isoformat(),
                 "ciphertext_sha256": tool.sha256(artifact)}

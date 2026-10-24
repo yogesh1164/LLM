@@ -20,7 +20,8 @@ def check(destination, max_age_hours=26, now=None):
     for path in Path(destination).glob("agentflow-*.json"):
         manifest = json.loads(path.read_text(encoding="utf-8"))
         artifact_name = manifest["artifact"]
-        if Path(artifact_name).name != artifact_name or not artifact_name.endswith(".fernet"):
+        if (Path(artifact_name).name != artifact_name
+                or not artifact_name.endswith((".age", ".fernet"))):
             raise tool.BackupError("Invalid artifact path")
         artifact = path.parent / artifact_name
         created = datetime.fromisoformat(manifest["created_utc"])

@@ -2,21 +2,37 @@
 
 ## Current production-readiness continuation: 2026-10-24
 
-Continued from `62234f9` on `feature/v2-production-hardening`. Current engineering
-estimate **95% complete / 5% remaining**; release status **NOT READY**. Implemented
-and verified isolated least-privilege PostgreSQL roles, encrypted synthetic
-backup/restore, combined role-separated account/durable rehearsal, fail-closed
-preflight/image tooling and CI operational checks. Fixed account-mode rate-limit
-double counting and production error handling. See
-[current evidence and remaining approvals](V2_RELEASE_EVIDENCE.md) and
-[final validation results](V2_VERIFICATION.md).
+### Latest interrupted-work completion status
 
-Both final app image scans retain **1 HIGH / 0 CRITICAL**, CVE-2026-85091. No
-supported Trixie patch was available; no suppression or risk acceptance is enabled.
-Off-host destination/key custody, production role rollout, legacy assignment,
-maintenance/cutover, feature activation and final acceptance remain operator gates.
-No production/development DB changes, real environment overwrites, service restarts,
-volume deletions, paid Gemini requests, push, merge or deployment occurred.
+Continued from local commit `2c1e7d1ef2f9af9244564f2370cdcc0a16325e91`.
+Engineering estimate **96% complete / 4% remaining**; release remains **NOT
+READY**. Latest backend/frontend review IDs and Scout counts are in
+[release evidence](V2_RELEASE_EVIDENCE.md); each still has one HIGH
+CVE-2026-85091 and zero CRITICAL. Streaming age backup passed a 300 MiB local
+round-trip and synthetic PostgreSQL restore matched 15 tables, but there is no
+configured or verified off-host destination. The audited database role remains
+overprivileged; the generated plan is commented and unapplied. Ownership mapping
+is verified only against synthetic data. All implementation changes are still
+uncommitted; candidate and history secret scans passed, and the local checkpoint
+remains pending.
+
+Latest completed full suites: Linux **407 passed, 2 skipped, 1 xfailed**;
+Windows **373 passed, 36 skipped, 1 xfailed**. The focused Windows backup,
+ownership and role regression run passed **47, skipped 8**; PostgreSQL-only
+integration verification recorded separately in the work log passed **7/7**.
+No paid Gemini calls or production changes.
+
+The prior checkpoint resumed from `62234f9` with an estimate of 95%; that estimate
+is superseded by the latest continuation status above. The implemented isolated
+least-privilege PostgreSQL roles, encrypted synthetic backup/restore, combined
+role-separated account/durable rehearsal, fail-closed preflight/image tooling and
+CI operational checks remain preserved. See [current evidence and remaining
+approvals](V2_RELEASE_EVIDENCE.md) and [final validation results](V2_VERIFICATION.md).
+
+Both latest app image scans retain one HIGH / zero CRITICAL for CVE-2026-85091.
+No supported Trixie package fix was available; no suppression or risk acceptance
+is enabled. Off-host delivery, production role rollout, ownership decisions,
+feature activation and final cutover remain operator gates.
 
 Older snapshots below retain their original counts and limits as historical evidence;
 they do not supersede the current evidence/runbooks.

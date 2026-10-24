@@ -12,7 +12,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import backup as tool
-from cryptography.fernet import Fernet
+import make_key
 
 
 def sql(container, database, statement):
@@ -32,6 +32,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--app-image", default="agentflow-backend:v2-accounts-final-tests")
     parser.add_argument("--report", required=True)
+    parser.add_argument("--age-binary", default="age")
+    parser.add_argument("--age-keygen", default="age-keygen")
     args = parser.parse_args()
     name = "agentflow-v2-backup-fixture-" + uuid4().hex[:12]
     root = Path(__file__).resolve().parents[2]
@@ -83,14 +85,21 @@ def main():
                                container=name)
         target = tool.Postgres("agentflow_restore_fixture", "fixture_admin",
                                "/var/run/postgresql", container=name)
-        with tempfile.TemporaryDirectory(prefix="agentflow-encryption-drill-") as work:
+        started = time.monotonic()
+        with (tempfile.TemporaryDirectory(prefix="agentflow-encryption-worker-") as work,
+              tempfile.TemporaryDirectory(prefix="agentflow-independent-destination-") as delivery,
+              tempfile.TemporaryDirectory(prefix="agentflow-independent-recovery-") as recovery):
             work = Path(work)
             key = work / "separate-key"
-            key.write_bytes(Fernet.generate_key())
+            make_key.create(key, format="age", age_keygen=args.age_keygen)
             report = tool.backup(source, key_file=key, spool=work / "spool",
-                                 destination=work / "destination")
-            archive = work / "restored.dump"
-            tool.decrypt(work / "destination" / report["artifact"], archive, key.read_bytes())
+                                 destination=delivery, encryption="age", age_binary=args.age_binary)
+            backup_seconds = time.monotonic() - started
+            recovery_started = time.monotonic()
+            # Read the independently delivered bytes; no source spool dependency.
+            recovered_ciphertext = tool.deliver(Path(delivery) / report["artifact"], recovery)
+            archive = Path(recovery) / "restored.dump"
+            tool.decrypt_archive(recovered_ciphertext, archive, key, age_binary=args.age_binary)
             assert tool.sha256(archive) == report["archive_sha256"]
             target.restore(archive, "af_restore_owner")
             original = snapshot(name, source.database)
@@ -110,7 +119,10 @@ def main():
             report.update({"synthetic_restore_verified": True, "matching_tables": len(original),
                            "migration": "0007_accounts_ownership", "owner": owners,
                            "account_readiness_verified": True,
-                           "destination": "temporary local filesystem", "fixture_network": "none"})
+                           "backup_seconds": round(backup_seconds, 3),
+                           "restore_validation_seconds": round(time.monotonic() - recovery_started, 3),
+                           "destination": "independent temporary local filesystem",
+                           "independent_recovery_worker": True, "fixture_network": "none"})
             Path(args.report).write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
             print(json.dumps(report))
         return 0

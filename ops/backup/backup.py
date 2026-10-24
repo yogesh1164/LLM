@@ -1,7 +1,7 @@
 """Explicit-identity PostgreSQL backups. No shell, password arguments or dotenv loading.
 
-Fernet is the cryptography project's authenticated-encryption recipe. This adapter
-intentionally caps archives at 256 MiB because Fernet operates in memory.
+New CLI backups use the maintained age tool's streaming authenticated format.
+Legacy Fernet archives remain readable, with their original memory bound.
 """
 
 import argparse
@@ -19,6 +19,7 @@ from uuid import uuid4
 from cryptography.fernet import Fernet, InvalidToken
 
 MAX_ARCHIVE_BYTES = 256 * 1024 * 1024
+AGE_HEADER = b"age-encryption.org/v1\n"
 
 
 class BackupError(Exception):
@@ -122,6 +123,56 @@ def decrypt(encrypted, archive, key):
         stream.write(plaintext)
 
 
+def is_age_identity(key_file):
+    with Path(key_file).open("rb") as stream:
+        # Key files are small; refuse an accidental archive/large secret input.
+        material = stream.read(16 * 1024 + 1)
+    if len(material) > 16 * 1024:
+        raise BackupError("Identity file exceeds supported size")
+    return any(line.strip().startswith(b"AGE-SECRET-KEY-1") for line in material.splitlines())
+
+
+def age_transform(source, target, key_file, *, decrypting=False, age_binary="age", timeout=300):
+    """Delegate cryptography/stream framing entirely to age, never custom crypto.
+
+    Decryption can produce bytes before the last authenticated chunk is checked.
+    Only publish the plaintext after age exits successfully; failure removes all
+    partial plaintext. Exclusive hard-link publication never overwrites targets.
+    """
+    source, target, key_file = (Path(p).resolve() for p in (source, target, key_file))
+    if target.exists():
+        raise BackupError("Output artifact already exists")
+    if not is_age_identity(key_file):
+        raise BackupError("Native age X25519 identity required")
+    partial = target.parent / (".crypto-partial-" + uuid4().hex)
+    try:
+        with partial.open("xb") as writer:
+            run([str(age_binary), "--decrypt" if decrypting else "--encrypt",
+                 "--identity", str(key_file), str(source)], output=writer, timeout=timeout)
+            writer.flush()
+            os.fsync(writer.fileno())
+        if not decrypting:
+            with partial.open("rb") as reader:
+                if reader.read(len(AGE_HEADER)) != AGE_HEADER:
+                    raise BackupError("Unexpected age encryption format")
+        os.link(partial, target)
+    finally:
+        partial.unlink(missing_ok=True)
+
+
+def decrypt_archive(encrypted, archive, key_file, *, age_binary="age", timeout=300):
+    """Format-detect age or legacy Fernet; never fall back after an age failure."""
+    with Path(encrypted).open("rb") as reader:
+        header = reader.read(len(AGE_HEADER))
+    if header == AGE_HEADER:
+        age_transform(encrypted, archive, key_file, decrypting=True,
+                      age_binary=age_binary, timeout=timeout)
+    else:
+        if is_age_identity(key_file):
+            raise BackupError("Archive format does not match age identity")
+        decrypt(encrypted, archive, Path(key_file).read_bytes().strip())
+
+
 def deliver(source, destination):
     """Local/OS-mounted destination adapter; never reports off-host attestation."""
     destination = Path(destination)
@@ -144,13 +195,21 @@ def deliver(source, destination):
     return target
 
 
-def backup(pg, *, key_file, spool, destination):
+def backup(pg, *, key_file, spool, destination, encryption="auto", age_binary="age"):
     identity = pg.identity()
     key_file, spool, destination = (Path(p).resolve() for p in (key_file, spool, destination))
     if key_file.is_relative_to(spool) or key_file.is_relative_to(destination):
         raise BackupError("Key must be stored separately from spool and destination")
-    key = key_file.read_bytes().strip()
-    Fernet(key)
+    native_age = is_age_identity(key_file)
+    if encryption not in ("auto", "age", "fernet"):
+        raise BackupError("Unsupported encryption format")
+    use_age = native_age if encryption == "auto" else encryption == "age"
+    if use_age and not native_age:
+        raise BackupError("New CLI backups require an age identity")
+    key = None if use_age else key_file.read_bytes().strip()
+    if not use_age:
+        Fernet(key)
+    timeout = getattr(pg, "timeout", 300)
     spool.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="agentflow-backup-", dir=spool) as work:
         work = Path(work)
@@ -158,17 +217,22 @@ def backup(pg, *, key_file, spool, destination):
         pg.dump(archive)
         pg.verify(archive)
         name = datetime.now(UTC).strftime("agentflow-%Y%m%dT%H%M%SZ-") + uuid4().hex
-        encrypted = work / (name + ".fernet")
-        encrypt(archive, encrypted, key)
+        encrypted = work / (name + (".age" if use_age else ".fernet"))
+        if use_age:
+            age_transform(archive, encrypted, key_file, age_binary=age_binary, timeout=timeout)
+        else:
+            # Compatibility for the existing in-process rehearsal API only.
+            encrypt(archive, encrypted, key)
         restored = work / "verified.dump"
-        decrypt(encrypted, restored, key)
+        decrypt_archive(encrypted, restored, key_file, age_binary=age_binary, timeout=timeout)
         if sha256(archive) != sha256(restored):
             raise BackupError("Decrypted archive checksum mismatch")
         pg.verify(restored)
-        manifest = {"format": 1, "created_utc": datetime.now(UTC).isoformat(),
+        manifest = {"format": 2 if use_age else 1, "created_utc": datetime.now(UTC).isoformat(),
                     "identity": identity, "archive_sha256": sha256(archive),
                     "ciphertext_sha256": sha256(encrypted), "artifact": encrypted.name,
-                    "encryption": "cryptography.Fernet", "delivery_adapter": "filesystem",
+                    "encryption": "age/X25519" if use_age else "cryptography.Fernet",
+                    "delivery_adapter": "filesystem",
                     "off_host_verified": False}
         # The manifest is informational. Authentication is verified by Fernet;
         # untrusted checksum metadata alone must never authorize a restore.
@@ -191,6 +255,7 @@ def main():
     parser.add_argument("--command-timeout-seconds", type=int, default=300)
     parser.add_argument("--container")
     parser.add_argument("--key-file", required=True)
+    parser.add_argument("--age-binary", default="age")
     parser.add_argument("--spool", required=True)
     parser.add_argument("--destination")
     parser.add_argument("--artifact")
@@ -208,7 +273,7 @@ def main():
             if not args.destination:
                 raise BackupError("Destination required")
             result = backup(pg, key_file=args.key_file, spool=args.spool,
-                            destination=args.destination)
+                            destination=args.destination, encryption="age", age_binary=args.age_binary)
         else:
             if not args.execute_restore or not args.artifact:
                 raise BackupError("Restore needs --execute-restore and --artifact")
@@ -216,7 +281,8 @@ def main():
             spool.mkdir(parents=True, exist_ok=True)
             with tempfile.TemporaryDirectory(dir=spool) as work:
                 archive = Path(work) / "restore.dump"
-                decrypt(args.artifact, archive, Path(args.key_file).read_bytes().strip())
+                decrypt_archive(args.artifact, archive, args.key_file,
+                                age_binary=args.age_binary, timeout=args.command_timeout_seconds)
                 pg.verify(archive)
                 pg.restore(archive, args.restore_owner)
             result = {"restored": True, "identity": pg.identity()}

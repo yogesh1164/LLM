@@ -4,6 +4,22 @@ Status on 2026-10-24: implemented and tested **only in a new disposable instance
 Existing development/production databases, roles and connection configuration were
 not changed. Production application-role replacement remains operator-authorized work.
 
+Latest interruption review: the authorized **read-only catalog capture** found
+PostgreSQL 16.15, revision `0005_custom_workflows`, nine application tables owned
+by `agentflow`, and that role had SUPERUSER/CREATEDB/CREATEROLE/REPLICATION/
+BYPASSRLS enabled. It made no role or ACL changes. The plan remains **not ready to
+apply**: six 0007 tables do not yet exist in the observed 0005 snapshot, so the
+post-migration grant candidates require approved 0006/0007 migrations and a fresh
+catalog capture. See [the dry-run report](V2_DATABASE_ROLE_DRY_RUN.md). No
+production credential or connection was changed.
+
+The continuation from checkpoint `2c1e7d1` adds an
+[offline production-role dry-run package](V2_DATABASE_ROLE_DRY_RUN.md) with explicit
+catalog provenance, commented SQL export and approval sequencing. Production
+read-only catalog inspection confirmed the existing application role is overprivileged;
+the sanitized findings and before/after-migration plan are in that document. No
+production roles, credentials, records, connection configuration or services changed.
+
 ## Design
 
 | Role | Permitted work | Excluded rights |

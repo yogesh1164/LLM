@@ -40,6 +40,14 @@ automatically resubmits a potentially billed operation.
 
 ## Migration and ownership review
 
+For legacy records belonging to multiple accounts, use the reviewed
+[component mapping and quarantine procedure](V2_OWNERSHIP_ROLLOUT.md), not a
+single-workspace owner assignment. The older `assign-ownership` command now also
+requires `--confirm-manifest-digest EXACT_APPROVED_MANIFEST_DIGEST`; confirm it
+against the manifest and never include a real password in command arguments.
+Synthetic mapping and quarantine tests passed; no real production records were
+inventoried for assignment or changed.
+
 `0007_accounts_ownership` follows `0006_durable_executions`. It adds users,
 sessions, login buckets, account audit, ownership-assignment audit and nullable
 indexed owner foreign keys on tasks, agents, agent executions, workflows,
@@ -60,7 +68,7 @@ Before an approved cutover, rehearse on a newly restored isolated target:
 4. Either retain null ownership in quarantine, or obtain approval for a specific
    whole-workspace assignment. `plan-ownership --owner-id UUID --output FILE`
    creates a new manifest containing IDs/counts/digests. Review it before
-   `assign-ownership --manifest FILE --confirm-login LOGIN --approval REF --apply`.
+   `assign-ownership --manifest FILE --confirm-login LOGIN --approval REF --confirm-manifest-digest EXACT_APPROVED_MANIFEST_DIGEST --apply`.
    No `--apply` means no assignment. Stale/tampered manifests, foreign references,
    running executions and a non-admin target are refused. Assignment is atomic
    and a repeat of the identical manifest verifies ownership and returns zero.

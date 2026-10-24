@@ -5,13 +5,23 @@ No production backup, remote upload, remote storage configuration, credential
 change or scheduled job activation occurred. Off-host delivery remains an operator
 release gate. The existing database volumes and services are untouched.
 
+Latest isolated evidence: `age v1.3.2` encrypted/decrypted a random **300 MiB**
+archive with matching SHA-256, and a separately retrieved local destination copy
+also matched. Aggregate worker/age peak sampled RSS was 43,765,760 bytes. A
+synthetic PostgreSQL 16.15 custom-format archive restored independently and
+matched **15 tables** at `0007_accounts_ownership`; restore owner/account readiness
+checks passed. Evidence records `off_host_verified: false`: the destination was a
+temporary local filesystem, no external provider/account or production schedule was
+configured, and no real production artifact was sent. This drill does not set a
+production RPO/RTO or prove key-custody recovery.
+
 ## What the tooling does
 
 [`ops/backup/backup.py`](../ops/backup/backup.py) explicitly checks the selected
 database name, login role and PostgreSQL major version 16. It checks SELECT
 permissions, creates a consistent custom-format `pg_dump`, reads the archive with
 `pg_restore --list`, hashes the binary archive, encrypts it with the maintained
-[`cryptography.Fernet` recipe](https://cryptography.io/en/latest/fernet/), decrypts
+[age CLI](https://github.com/FiloSottile/age), decrypts
 it locally, compares hashes and rechecks archive readability. It publishes only
 the authenticated ciphertext and an informational JSON manifest to a filesystem
 destination, then checks destination SHA-256. Passwords are never accepted as CLI
@@ -19,18 +29,29 @@ arguments, printed or placed in manifests. No shell or PowerShell binary pipelin
 is used. PostgreSQL's [custom archive format and consistency guarantees](https://www.postgresql.org/docs/16/app-pgdump.html)
 are provided by `pg_dump`.
 
-Fernet provides authenticated encryption using the library's established recipe;
+Age provides authenticated streaming encryption using its [published format](https://age-encryption.org/v1);
 the JSON manifest is not authenticated and is not trusted to authorize recovery.
-Ciphertext tampering and wrong keys fail before plaintext is written. Hashes
+Ciphertext tampering and wrong keys fail before plaintext is published for use.
+Age may write authenticated prefix chunks into a private temporary file before a
+later chunk fails: that file is removed on any failure and never passed to restore. Hashes
 detect delivery errors; only authenticated decryption establishes ciphertext
 integrity. The key holder and destination access controls remain trust boundaries.
 
-The deliberate **256 MiB plaintext archive limit** bounds Fernet memory use.
-Memory consumption is several times the archive size. If the real compressed
-backup exceeds this limit, this implementation is not approved for that dataset:
-select and review a streaming authenticated-encryption adapter (for example age),
-run another synthetic and representative-size restore drill, and revise this
-limit/design explicitly. It never truncates or downgrades encryption.
+New CLI backups always use **age X25519 identities and streaming authenticated
+encryption**, with no application archive-size cap. Python streams subprocess
+output and file copies; age owns encryption, chunk framing and authentication.
+No custom cryptographic protocol was implemented. Disk capacity and approved
+runtime remain practical bounds: provision protected spool capacity for a dump,
+ciphertext, verification plaintext and recovery copies, rather than relying on
+RAM proportional to archive size.
+
+Existing `.fernet` archives remain readable by format detection with their original
+Fernet key. Their **256 MiB plaintext bound remains intentionally enforced** because
+that legacy library recipe buffers whole messages. Do not rename archives or
+replace old keys. The Python `backup()` API defaults to identity-based automatic
+format selection only to preserve the already verified Fernet rehearsal callers;
+new production automation must use the CLI (age-only) or pass `encryption="age"`
+explicitly. There is no silent fallback after an age authentication failure.
 
 ## Prerequisites and credential custody
 
@@ -43,7 +64,13 @@ limit/design explicitly. It never truncates or downgrades encryption.
    worker's `PGPASSFILE`; container mode uses a protected libpq passfile already
    mounted in that container. Do not pass a password through arguments or logs.
    Do not reuse the application's migration or administrator credentials.
-3. Install the isolated worker requirements, not an unreviewed application update:
+3. Install PostgreSQL clients and age/age-keygen **1.2.1 or later** through an
+   operator-trusted distribution/package source; the Windows verification below
+   used official **age 1.3.2**. For Windows the upstream recommends
+   `winget install --id FiloSottile.age`; Debian workers can use `apt install age`.
+   Package installation is a worker prerequisite, not a production-container change.
+   Set `--age-binary` / `--age-keygen` to explicit trusted paths if not on PATH.
+   Install the isolated worker Python requirements, not an application update:
 
    ```powershell
    py -3.12 -m venv C:\AgentFlowBackupWorker
@@ -61,7 +88,7 @@ limit/design explicitly. It never truncates or downgrades encryption.
 5. Generate the key once, into the separate restricted directory:
 
    ```powershell
-   C:\AgentFlowBackupWorker\Scripts\python.exe ops\backup\make_key.py C:\AgentFlowKeys\backup-2026-10.fernet-key
+   C:\AgentFlowBackupWorker\Scripts\python.exe ops\backup\make_key.py C:\AgentFlowKeys\backup-2026-10.age-identity --format age
    if ($LASTEXITCODE -ne 0) { throw 'Backup key creation failed' }
    ```
 
@@ -84,7 +111,7 @@ $backupPython = 'C:\AgentFlowBackupWorker\Scripts\python.exe'
 & $backupPython ops\backup\backup.py backup `
   --database '<approved-database>' --user '<approved-backup-role>' `
   --host '<approved-private-db-host>' --port 5432 `
-  --key-file C:\AgentFlowKeys\backup-2026-10.fernet-key `
+  --key-file C:\AgentFlowKeys\backup-2026-10.age-identity `
   --spool C:\AgentFlowBackupSpool `
   --destination '\\approved-offhost-server\agentflow-encrypted' `
   --allow-production-read
@@ -141,8 +168,16 @@ not attest restoration or off-host location. Set thresholds to the approved RPO.
 Proposed policy pending operator acceptance: daily backups retained for 30 days,
 one separately retained monthly backup for 12 months, and an immutable retention
 window covering the incident-detection horizon. Configure retention with the remote
-store's lifecycle mechanism after a successful independent restore; **no automatic
-backup deletion is enabled by these scripts**. Keep at least two verified recovery
+store's lifecycle mechanism after a successful independent restore; **no scheduled
+backup deletion is activated**. `retention.py --destination <path>` is a read-only
+plan by default: it protects at least the newest two sets and the newest set in
+each of the latest 12 represented months, then proposes older-than-30-day pairs.
+It validates exact artifact/manifest pairing and ciphertext hashes, refuses
+symlinks, and leaves unrelated files untouched. An operator may run deletion only
+after reviewing recovery evidence/legal holds, supplying `--execute-local-prune`,
+the exact same resolved `--confirm-destination`, and
+`--confirm-action DELETE_EXPIRED_ENCRYPTED_BACKUPS`. Do not schedule deletion until
+the remote lifecycle/immutability/hold policy has been accepted. Keep at least two verified recovery
 points and never delete the last known-good set. Monitor capacity and lifecycle
 jobs. Logical daily backups imply a potential 24-hour RPO, not point-in-time
 recovery; WAL archiving/PITR is not implemented here.
@@ -177,8 +212,8 @@ source database SQL; encryption does not make an untrusted source safe.
    & $backupPython ops\backup\backup.py restore `
      --database agentflow_restore_drill --user '<approved-restore-operator>' `
      --host '<isolated-host>' --port 5432 `
-     --artifact C:\EncryptedRecovery\agentflow-example.fernet `
-     --key-file C:\AgentFlowKeys\backup-2026-10.fernet-key `
+     --artifact C:\EncryptedRecovery\agentflow-example.age `
+     --key-file C:\AgentFlowKeys\backup-2026-10.age-identity `
      --spool C:\AgentFlowRestoreSpool --restore-owner '<migration-owner>' `
      --execute-restore
    if ($LASTEXITCODE -ne 0) { throw 'Isolated restore failed' }
@@ -209,10 +244,20 @@ backend\.venv\Scripts\python.exe -m pytest ops\backup -q
 backend\.venv\Scripts\python.exe -m ruff check ops\backup
 backend\.venv\Scripts\python.exe ops\backup\verify_fixture.py `
   --app-image agentflow-backend:v2-accounts-final-tests `
-  --report backups\v2-encrypted-backup-evidence.json
+  --report backups\v2-streaming-postgres-backup-evidence.json
+backend\.venv\Scripts\python.exe -m pip install -r ops\backup\requirements-test.txt
+backend\.venv\Scripts\python.exe ops\backup\verify_large_archive.py `
+  --report backups\v2-streaming-backup-memory.json
 ```
 
-Verified on 2026-10-24: **14 offline tests passed**, Ruff passed; a newly named,
+For actual age unit tests set `AGENTFLOW_TEST_AGE_BINARY` and
+`AGENTFLOW_TEST_AGE_KEYGEN` to the trusted executables; without them six external
+age cases are explicitly skipped, not treated as verified. The large-file harness
+uses psutil only for measurement and records aggregate RSS of the separate Python
+worker **plus its age subprocesses**, with a requested 10 ms polling delay
+(process inspection adds overhead; actual sample counts are recorded).
+
+Verified on 2026-10-24: **26 offline tests passed with age configured**, Ruff passed; a newly named,
 network-less tmpfs PostgreSQL **16.15** fixture migrated from empty through
 `0007_accounts_ownership`. A non-superuser SELECT-only backup role dumped the
 schema and synthetic account/session, owned Unicode task and durable journal
@@ -224,9 +269,32 @@ application table belonged to the requested restore owner. Fixture containers we
 removed without deleting volumes; transient synthetic keys/archives were cleaned.
 The restored database also passed the application's `verify_account_readiness()`
 schema/admin/relationship/idempotency-scope integrity verification.
+That PostgreSQL drill read the separately delivered archive into another recovery
+directory before decryption; its source spool was not used for restore. Synthetic
+backup work took 29.297 s and restore plus validation took 13.172 s; these small
+fixture timings exclude operator provisioning/incident response and do not define
+a production RTO.
 Tamper, wrong-key, overwrite, identity/version mismatch, existing/nonfixture restore
 targets, separate-key storage, size bound, stale/missing/corrupt deliveries and
 unsafe manifest paths have automated coverage. Client timeouts and malformed
 monitor JSON also have sanitized-failure coverage. The evidence JSON contains
 hashes and synthetic identities only. This does **not** demonstrate a real remote backup,
 production restoration, scheduler activation or production recovery objectives.
+
+Independent synthetic large-file verification used **16 MiB and 300 MiB** random
+archives. Both encrypted, copied to a separately named destination, retrieved into
+an independent recovery directory, decrypted and matched SHA-256. Measured peak
+aggregate Python-worker/age RSS was **43,225,088 bytes** for 16 MiB and
+**43,765,760 bytes** for 300 MiB, under the harness's 128 MiB budget. Measured
+operation times were 0.781 s and 14.640 s. These are observed Windows measurements,
+not production throughput guarantees; 10 ms sampling is not a proof that every
+instantaneous allocation was observed. Age's streaming design is the basis for
+bounded memory, supported by this scaling check. No real data was used.
+
+The tested Windows age archive SHA-256 was
+`f48d8f8f9ebe903ab5027ed067652f2cc1db94bc206976430133b905dcd8e8c7`, matching the
+official GitHub v1.3.2 release asset's published digest over HTTPS. No third-party
+binary mirrors were used. Independent [Sigsum proof verification](https://github.com/FiloSottile/age/blob/main/SIGSUM.md)
+was not performed in this run; use trusted OS packaging or the upstream verification
+procedure for the selected worker's toolchain. Downloaded tools, synthetic keys
+and archive data are not committed.

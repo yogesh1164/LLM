@@ -1,5 +1,37 @@
 # V2 development checkpoint verification
 
+## Latest blocker-resolution continuation — 2026-10-24
+
+This section supersedes earlier current-result counts below; older entries remain
+historical. Full offline pytest runs from the interrupted continuation:
+
+| Check | Result |
+|---|---|
+| Linux backend + `ops/backup` | **407 passed, 2 skipped, 1 xfailed**, 148.73s |
+| Windows backend + `ops/backup` | **373 passed, 36 skipped, 1 xfailed**, 111.51s |
+| Focused Windows ownership mapping, role tests and backup tests | **47 passed, 8 skipped**, 26.32s; 28 SQLite index-reflection warnings |
+| Focused ownership PostgreSQL suite | **7 passed, 0 skipped** on a new isolated PostgreSQL fixture (saved agent result) |
+| Ruff | `ruff check backend deploy ops`: passed |
+| Frontend | ESLint, app/test TypeScript, UTF-8 check, production build passed; npm audit 0 vulnerabilities (saved continuation evidence) |
+| Image builds | Backend and frontend review image builds passed |
+| Current image scans | Backend 1 HIGH / 0 CRITICAL, 6 MEDIUM, 27 LOW; frontend 1 HIGH / 0 CRITICAL, 1 MEDIUM, 26 LOW. Both fail the HIGH gate. |
+| Streaming backup | 300 MiB age round-trip and separate local retrieval hash verified; synthetic PostgreSQL restore matched all 15 tables at revision 0007. `off_host_verified=false`. |
+
+Known skip/xfail counts are retained exactly from pytest output; no failures were
+reported in these full runs. The PostgreSQL mapping result is an isolated focused
+test run, not evidence of production data migration. Latest immutable image IDs,
+scanner evidence and the conservative unresolved CVE disposition are recorded in
+[release evidence](V2_RELEASE_EVIDENCE.md) and
+[the zlib risk assessment](V2_ZLIB_RISK_ASSESSMENT.md).
+
+Candidate-file checks passed for 30 intended files (configured secrets, private-key
+markers and binary/NUL checks); redacted Gitleaks found no candidate findings. A
+Gitleaks scan of all 9 `main..HEAD` commits found no leaks. Real environment files,
+private key/certificate material, backup archives and operational evidence were
+outside the candidate export. The branch is still uncommitted at base
+`2c1e7d1ef2f9af9244564f2370cdcc0a16325e91`; final diff review and the local
+checkpoint remain pending.
+
 ## Final production-readiness continuation: 2026-10-24
 
 Continued clean from `62234f9`; status **NOT READY**. Current scope and remaining

@@ -6,14 +6,36 @@ Production/development databases, roles, volumes, services and real environment
 files remain unchanged. Nothing was pushed, merged, deployed or publicly exposed;
 all provider calls in the engineering fixtures were offline doubles.
 
-The former estimate was 92%. The current engineering estimate is **95% complete /
-5% remaining**, not a test pass ratio or release approval. Using the previous
-weights (durable 15%, accounts 25%, images 15%, combined 20%, final checks 10%,
-runbooks 10%, checkpoint 5%) and current component estimates (90%, 97%, 85%, 98%,
-98%, 98%, 100%) yields 94.7%, rounded. Allow roughly **2–4 engineering/operator
-days** for remaining acceptance/integration work, excluding vendor waiting,
-approvals, destination procurement and maintenance scheduling. Provider
-cancellation/unknown outcomes and distributed budgets remain documented limits.
+## Latest blocker-resolution continuation — 2026-10-24
+
+This status supersedes the image IDs and test counts below where they differ.
+Latest local base commit before this uncommitted continuation:
+`2c1e7d1ef2f9af9244564f2370cdcc0a16325e91`. Engineering completion estimate:
+**96% complete / 4% remaining**; release remains **NOT READY**. No checkpoint has
+yet been created for the continuation.
+
+| Workstream | Latest evidence and disposition |
+|---|---|
+| Container CVE | Backend `sha256:5bd868922bf34d44126f4b8c97243216d5cf5245c48d1243b7b3260046077c26`: 1 HIGH, 0 CRITICAL, 6 MEDIUM, 27 LOW. Frontend `sha256:1b07add53c68f430329b58cc8f00920c9ef4f5baa3909405e030750c457fbfe6`: 1 HIGH, 0 CRITICAL, 1 MEDIUM, 26 LOW. Both HIGH findings are CVE-2026-85091; neither is accepted or suppressed. |
+| Backup | Age/X25519 streaming passed 300 MiB authenticated round-trip and separate local retrieval. Synthetic PostgreSQL restore matched 15 tables at 0007. Delivery evidence states `off_host_verified: false`; no destination or schedule is configured. |
+| Database roles | Read-only catalog evidence found the audited `agentflow` role has SUPERUSER, CREATEDB, CREATEROLE, REPLICATION and BYPASSRLS; revision was 0005. A commented offline plan exists, but `ready_to_apply` is false. No role or grant changed. |
+| Ownership | Synthetic mapping, quarantine, stale-manifest, ownership-isolation and concurrent-apply checks passed. No production records were inventoried for assignment or assigned. |
+| Repository | Candidate secret/private-key scan passed for 30 intended files; redacted Gitleaks candidate scan passed and history scan found no leaks across 9 `main..HEAD` commits. Changes remain uncommitted; final diff review and local checkpoint are pending. |
+
+Debian tracker still lists Trixie as vulnerable/unfixed and signed package metadata
+offered no newer Trixie zlib. Upstream has a corrective commit, but no supported
+Debian package fix was available in the checked repository. Debian tracker history
+records that the security team retained the affected status conservatively while
+awaiting upstream/maintainer confirmation; package-source comparison suggests a
+classification mismatch but does not clear the scanner finding or Node's embedded
+copy. Risk remains **unresolved and not accepted**.
+
+The previous checkpoint estimate was 95%. The latest estimate above is **96%
+complete / 4% remaining**, not a test pass ratio or release approval. Remaining
+engineering effort is roughly **8-16 hours**, excluding vendor patch/adjudication
+waiting, operator approvals, destination procurement and maintenance windows.
+Provider cancellation/unknown outcomes and distributed budgets remain documented
+limits.
 
 ## Workstream disposition
 
@@ -26,14 +48,14 @@ cancellation/unknown outcomes and distributed budgets remain documented limits.
 | E: focused security audit | Argon2/session/Origin/CSRF/throttling/ownership tests, safe Markdown and telemetry inspection, request-body limits, static/dependency/image/secret checks; corrected account production-error boundary and duplicate rate admission | **Residual findings retained:** image CVE, per-process admission/budgets, synchronous provider cancellation, absent restrictive script CSP |
 | F: automation/runbooks | Read-only preflight, inactive role overlay, role/backup/security/combined cutover/rollback/recovery/monitoring runbooks, CI role and encrypted synthetic-backup jobs | **Prepared, not activated:** hosted CI and scheduled operational jobs have not run |
 | G: tests | Full offline platform suites plus dedicated privilege, encrypted restore and browser exercises; exact results below | Known XFAIL and explicitly guarded fixture skips retained |
-| H/I: reconciliation/checkpoint | Current evidence linked from all rollout/checkpoint/security/deployment documents; reviewed source-only local checkpoint | No remote publication or production approval implied |
+| H/I: reconciliation/checkpoint | Verification and rollout documents updated to this continuation; source review is ongoing | Final candidate/history secret scans and local checkpoint are pending; no remote publication or production approval implied |
 
 ## Security findings and final image identities
 
 | Candidate | Immutable image ID | HIGH / CRITICAL | Other Scout findings |
 |---|---|---|---|
-| Backend `v2-mission-review` | `sha256:3b1f9dcb6ad6263525949181e4089c00464b25f15e1142140584b5beeee819ba` | **1 / 0** | 6 MEDIUM, 27 LOW |
-| Frontend `v2-accounts-resume-review` | `sha256:f555ece0e95fb115a2e898aa17d9ecb7328d9d710ad6e3f3502832cf4437bb12` | **1 / 0** | 1 MEDIUM, 26 LOW |
+| Backend `v2-four-blockers-review` | `sha256:5bd868922bf34d44126f4b8c97243216d5cf5245c48d1243b7b3260046077c26` | **1 / 0** | 6 MEDIUM, 27 LOW |
+| Frontend `v2-four-blockers-review` | `sha256:1b07add53c68f430329b58cc8f00920c9ef4f5baa3909405e030750c457fbfe6` | **1 / 0** | 1 MEDIUM, 26 LOW |
 
 Both HIGH findings are **CVE-2026-85091**. Fresh Scout SARIF source is Debian,
 affected range `>0`, fixed version `not fixed`; the installed shared package is

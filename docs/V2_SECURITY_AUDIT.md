@@ -1,5 +1,15 @@
 # V2 security audit
 
+## Latest interruption verification — 2026-10-24
+
+The latest backend/frontend review images were rescanned by immutable digest:
+**1 HIGH / 0 CRITICAL each**, both CVE-2026-85091. Debian's tracker continues to
+mark Trixie affected/unfixed, although source/version evidence and tracker history
+show a dispute; the risk is **not accepted** and no suppression was added. See
+[the formal risk assessment](V2_ZLIB_RISK_ASSESSMENT.md). The latest full backend
+suite passed on Linux (407/2 skipped/1 xfailed) and Windows (373/36 skipped/1
+xfail). The branch has uncommitted changes and the final checkpoint is pending.
+
 ## Final focused audit continuation: 2026-10-24
 
 Current evidence supersedes the historical snapshots below:

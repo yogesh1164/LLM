@@ -1,5 +1,7 @@
 """Run ONLY in a fresh, no-network PostgreSQL16 container; no default DB fallback."""
+import hashlib
 import importlib.util
+import json
 import os
 from pathlib import Path
 from uuid import uuid4
@@ -75,6 +77,73 @@ def test_cli_redacts_connection_exception(monkeypatch, capsys):
     assert "database-url-secret" not in output.out + output.err
 
 
+def synthetic_inventory():
+    return {"database": "agentflow_production_example", "connected_role": "operator_example",
+            "server_version": "160015", "server_address": "192.0.2.10",
+            "database_owner": "legacy_app_example", "database_acl": "{=Tc/legacy_app_example}",
+            "schemas": [{"nspname": "public", "owner": "legacy_app_example", "acl": None}],
+            "memberships": [], "defaults": [], "column_acls": [], "functions": [],
+            "extensions": [{"name": "plpgsql", "version": "1.0"}],
+            "roles": [{"rolname": "legacy_app_example", "rolsuper": True}],
+            "tables": [{"tablename": "tasks", "tableowner": "legacy_app_example"}],
+            "objects": [{"schema": "public", "name": "tasks", "kind": "r",
+                         "owner": "legacy_app_example", "acl": None}]}
+
+
+def test_offline_plan_never_connects_or_applies_and_exports_commented_sql(monkeypatch, tmp_path):
+    def forbidden(*args, **kwargs):
+        pytest.fail("Offline planning must never create a DB engine")
+    monkeypatch.setattr(roles, "create_engine", forbidden)
+    monkeypatch.delenv("AGENTFLOW_OPERATOR_DATABASE_URL", raising=False)
+    source = tmp_path / "inventory.json"
+    source.write_text(json.dumps(synthetic_inventory()), encoding="utf-8")
+    output = tmp_path / "review"
+    command_args = ["plan", "--inventory-file", str(source), "--output-directory", str(output),
+                    "--inventory-provenance", "synthetic", "--expected-database", "agentflow_production_example"]
+    assert roles.main(command_args) == 0
+    report = json.loads((output / "role-dry-run.json").read_text(encoding="utf-8"))
+    assert report["source_inventory_sha256"] == hashlib.sha256(source.read_bytes()).hexdigest()
+    assert report["production_verified"] is False and report["ready_to_apply"] is False
+    assert report["database_connection_attempted"] is False
+    assert report["findings"]["privileged_roles"] == ["legacy_app_example"]
+    assert "users" in report["migration_gate"]["tables_not_yet_in_snapshot"]
+    assert report["migration_gate"]["revision_not_read_from_catalogs"] is True
+    assert report["planned_sql"]["post_migration_grants_candidate"]
+    assert all(line.startswith("--") for line in (output / "role-plan.sql").read_text().splitlines())
+    original = (output / "role-dry-run.json").read_bytes()
+    assert roles.main(command_args) == 1  # Never overwrite an existing review package.
+    assert (output / "role-dry-run.json").read_bytes() == original
+    assert roles.main(command_args + ["--apply"]) == 1
+
+
+def test_dry_run_flags_incomplete_conflicting_unknown_objects_and_secret_fields():
+    inventory = synthetic_inventory()
+    inventory["roles"].append({"rolname": "agentflow_runtime", "rolsuper": True})
+    inventory["objects"].append({"schema": "public", "name": "unreviewed_seq", "kind": "S"})
+    inventory["tables"].append({"tablename": "unreviewed_table", "tableowner": "legacy_app_example"})
+    del inventory["column_acls"]
+    report = roles.dry_run_report(inventory, "operator-supplied", "agentflow_production_example")
+    assert report["findings"]["existing_target_roles"] == ["agentflow_runtime"]
+    assert report["findings"]["unknown_tables"] == ["unreviewed_table"]
+    assert report["findings"]["unknown_objects"][0]["name"] == "unreviewed_seq"
+    assert "column_acls" in report["missing_inventory_fields"]
+    assert report["planned_sql"]["grants"] == []
+    inventory["roles"][0]["password"] = "never-export-this"
+    with pytest.raises(ValueError, match="documented catalog"):
+        roles.dry_run_report(inventory, "operator-supplied", "agentflow_production_example")
+
+
+def test_offline_plan_identity_and_version_are_required():
+    inventory = synthetic_inventory()
+    with pytest.raises(ValueError, match="Expected database"):
+        roles.dry_run_report(inventory, "synthetic", "wrong_database")
+    with pytest.raises(ValueError, match="provenance"):
+        roles.dry_run_report(inventory, "production", "agentflow_production_example")
+    inventory["server_version"] = "150000"
+    with pytest.raises(ValueError, match="PostgreSQL 16"):
+        roles.dry_run_report(inventory, "synthetic", "agentflow_production_example")
+
+
 @pytest.fixture
 def separated(monkeypatch):
     raw = os.environ.get("LEAST_PRIVILEGE_TEST_DATABASE_URL")
@@ -121,7 +190,7 @@ def separated(monkeypatch):
         admin.dispose()
 
 
-def test_postgres_roles_api_journal_permissions_and_migrations(separated, monkeypatch):
+def test_postgres_roles_api_journal_permissions_and_migrations(separated, monkeypatch, tmp_path):
     admin, migrator, runtime, backup = separated
     exercise_api(None, monkeypatch)
     token, _, principal = accounts.login("member-a", "synthetic-member-password")
@@ -181,5 +250,22 @@ def test_postgres_roles_api_journal_permissions_and_migrations(separated, monkey
         connection.execute(text("DROP TABLE public.future_review"))
         connection.execute(text("DROP SEQUENCE public.future_review_seq"))
     with admin.connect() as connection:
+        inventory = dict(connection.execute(text(roles.INVENTORY)).mappings().one())
+        report = roles.dry_run_report(inventory, "synthetic", "agentflow_privilege_fixture")
+        assert report["missing_inventory_fields"] == []
+        assert report["findings"]["unknown_objects"] == []
+        assert sorted(report["findings"]["existing_target_roles"]) == sorted(roles.ROLES)
+        assert report["inventory"]["database_owner"] == "privilege_fixture"
         assert connection.scalar(text("SELECT count(*) FROM pg_roles WHERE rolname LIKE 'agentflow_%' "
                                       "AND (rolsuper OR rolcreatedb OR rolcreaterole OR rolreplication OR rolbypassrls)")) == 0
+    monkeypatch.setenv("AGENTFLOW_OPERATOR_DATABASE_URL", admin.url.render_as_string(hide_password=False))
+    output = tmp_path / "inventory.json"
+    assert roles.main(["inventory", "--inventory-output", str(output)]) == 0
+    assert json.loads(output.read_text(encoding="utf-8"))["database"] == "agentflow_privilege_fixture"
+    # Even a deliberately injected mutating query is rejected by PostgreSQL, not just convention.
+    with admin.connect() as connection:
+        before = connection.scalar(text("SELECT count(*) FROM public.tasks"))
+    monkeypatch.setattr(roles, "INVENTORY", "DELETE FROM public.tasks RETURNING id")
+    assert roles.main(["inventory"]) == 1
+    with admin.connect() as connection:
+        assert connection.scalar(text("SELECT count(*) FROM public.tasks")) == before > 0

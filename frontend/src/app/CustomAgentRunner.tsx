@@ -2,6 +2,8 @@
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { apiFetch } from "./api";
+import { useDurableExecution } from "./useDurableExecution";
+import { ExecutionNotice } from "./ExecutionNotice";
 import { MarkdownContent } from "./ResultsPanel";
 import "./custom-agent-runner.css";
 
@@ -46,9 +48,11 @@ export function CustomAgentRunner({ agent, onClose }: { agent: RunAgent; onClose
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [task, setTask] = useState("");
   const [history, setHistory] = useState<Execution[]>([]);
-  const [selected, setSelected] = useState<Execution | null>(null);
+  const [historySelection, setSelected] = useState<Execution | null>(null);
+  const execution = useDurableExecution<Execution>(`/api/agents/${agent.id}/execute`);
+  const selected = execution.data ?? historySelection;
   const [historyLoading, setHistoryLoading] = useState(true);
-  const [running, setRunning] = useState(false);
+  const running = execution.busy;
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
@@ -77,22 +81,15 @@ export function CustomAgentRunner({ agent, onClose }: { agent: RunAgent; onClose
 
   async function execute(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!agent.enabled || agent.provider !== "gemini" || !task.trim() || running) return;
-    setRunning(true);
+    if (!agent.enabled || agent.provider !== "gemini" || !task.trim() || execution.client.getSnapshot().busy) return;
     setError("");
     try {
-      const execution = await requestJson<Execution>(`/api/agents/${agent.id}/execute`, {
-        method: "POST",
-        body: JSON.stringify({ task: task.trim() }),
-      });
-      setSelected(execution);
-      setTask("");
+      const result = await execution.client.submit(task.trim());
+      if (result?.status === "completed") setTask("");
       await loadHistory();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Agent execution failed.");
       await loadHistory();
-    } finally {
-      setRunning(false);
     }
   }
 
@@ -127,12 +124,13 @@ export function CustomAgentRunner({ agent, onClose }: { agent: RunAgent; onClose
             <span>{task.length}/8000 characters</span>
             <button className="primary" type="submit"
               disabled={running || !task.trim() || !agent.enabled || agent.provider !== "gemini"}>
-              {running ? "Running agent..." : "Run agent"}
+              {running ? "Running agent..." : execution.submission ? "Retry same submission" : "Run agent"}
             </button>
           </div>
           {agent.provider !== "gemini" && <p className="custom-runner-warning">Custom-agent execution currently supports Gemini only.</p>}
           {!agent.enabled && <p className="custom-runner-warning">Enable this agent before running it.</p>}
         </form>
+        <ExecutionNotice execution={execution} client={execution.client} onNew={() => setTask("")} />
         {error && <div role="alert" className="notice error">{error}</div>}
         {running && <p role="status" className="custom-runner-running">Agent is running. Keep this window open.</p>}
         <div className="custom-runner-layout">
@@ -142,7 +140,7 @@ export function CustomAgentRunner({ agent, onClose }: { agent: RunAgent; onClose
               <div className="custom-runner-history-items">
                 {history.map((item) => (
                   <button type="button" key={item.id} className={selected?.id === item.id ? "selected" : ""}
-                    onClick={() => { setSelected(item); setCopied(false); }}>
+                    onClick={() => { execution.client.clearResult(); setSelected(item); setCopied(false); }}>
                     <span>{new Date(item.created_at).toLocaleString()}</span>
                     <strong>{item.status}</strong>
                     <small>{item.task}</small>

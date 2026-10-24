@@ -1,8 +1,10 @@
 # Durable execution foundation
 
-Status: implemented behind `DURABLE_EXECUTION_ENABLED=false` (default). Development
-only; not deployed. Based on local checkpoint `89958d4`. No existing database was
-migrated. No account/ownership cutover or provider SDK rewrite is included.
+Status: backend and frontend integrated and enabled in disposable tests;
+`DURABLE_EXECUTION_ENABLED=false` remains the deployment default. No existing
+database was migrated. No account/ownership cutover or provider SDK rewrite.
+See [operator rollout/rollback procedure](V2_DURABLE_ROLLOUT.md); production
+migration/activation still require explicit approval and image-security clearance.
 
 ## Decisions and scope
 
@@ -18,12 +20,36 @@ durable mode, successful first responses retain those bodies/SSE events and add
 `X-Execution-ID` and `Location` headers. CORS permits `Idempotency-Key` and exposes
 these response headers. Existing bearer authentication protects journal reads.
 
-The enabled API's idempotency requirement is an explicit contract change. Current
-browser components do not manage durable keys or handle duplicate-202 responses.
-**Do not enable durable mode for the existing UI deployment yet.** A UI follow-up
-must keep a key through uncertain HTTP/SSE completion, handle 202 by inspecting
-history, and require a deliberate new intent before choosing a new key. No
-automatic per-fetch key generation or HTTP retry has been introduced.
+The browser now integrates fixed/SSE, saved-agent and saved-workflow execution.
+It stores one secure UUID per logical submission before POST, synchronously
+coalesces double submissions, retains identity through rerenders/refresh, and uses
+the same key for an explicit retry. A separate New execution action selects new
+intent, warning about duplicate costs unless the old execution completed.
+
+Session metadata contains only path/resource IDs, key, execution ID, state and
+timestamps: no prompt, prompt fingerprint, result, error text or bearer credential.
+Completed metadata expires after 24 hours; other keys expire after seven days into
+a recovery marker, never silently into a new key. Storage is capped at 24 entries
+and fails closed if unavailable/full/corrupt. The existing bearer storage design
+is unchanged. Separate tabs are distinct intents; no cross-tab content deduplication.
+
+Known IDs reconnect using authenticated GET status and the existing task/run/agent
+history endpoints. Monitoring is at most 180 sequential checks at five-second
+intervals, with 15-second GET deadlines and cancellation on unmount/auth change.
+The request lifetime is also bounded at 35 minutes. Monitoring can be resumed by
+an explicit Check status; no POST is used just to inspect state. After an ambiguous
+request with no returned ID, the user re-enters the exact task and retries the saved
+key. A GET probe to the existing status route must first confirm durable mode;
+ambiguous calls to legacy servers that ignore keys are never blindly retried.
+
+202 is parsed as the real journal descriptor, not a successful output or queued
+background job. 409 preserves the key and safe conflict message. 401 uses the
+existing token-expiration flow. 429/503/504 retain identity and surface safe errors;
+known IDs can still reconcile through GET. Incomplete/disconnected SSE falls back
+to GET when the ID is known. Completed and interrupted partial outputs are rendered
+in the existing themed results/history panels. Client Pending is not a persisted
+queue state. Timed-out/cancelled target records are displayed with friendly labels
+without changing DB states. No automatic paid POST retry has been introduced.
 
 ## Additive storage
 
@@ -150,8 +176,10 @@ status/data reconciliation, not automatic continuation from the next step.
 - DB restore to an older backup can lose journal reservations as well as results.
   Do not blindly resubmit keys after restore. Tombstone retention/backup policy is
   part of any future rollout and rollback decision.
-- Existing UI key lifecycle, accounts/owner isolation, live migration and deployment
-  remain outside this checkpoint. Durable mode does not make the app multi-user.
+- Accounts/owner isolation, live migration and deployment remain outside this
+  checkpoint. Durable mode does not make the app multi-user. Client identity loss,
+  explicit new keys, cross-tab submissions or stale DB restore can still duplicate
+  costs; journal keys are not authentication credentials.
 
 ## Verification approach
 
@@ -171,6 +199,17 @@ The explicit fixture URL is required; tests never fall back to an application DB
 
 CI has a dedicated disposable PostgreSQL job. Local full-suite results are recorded
 in V2_VERIFICATION.md; hosted CI has not run because no push is authorized.
+
+The completion runtime drill (`backend/tests/verify_durable_runtime.py`) creates
+only newly named containers/databases, an internal DB network and a separate
+loopback API ingress bridge, with no existing volume mounts. A guarded test module
+replaces the synchronous SDK and blocks external Python connections. It is not
+packaged into production images. Real process exits at four crash points,
+heartbeat/expiry fencing, eight concurrent requests across two backend processes,
+restart persistence and all three real browser execution surfaces pass. Synthetic
+archive backup/restore into a fresh networkless tmpfs server preserves all table
+counts/digests and matches SHA-256 across source, Windows copy and restore copy.
+All fixture containers are stopped afterward; ignored evidence is retained.
 
 Implementation references:
 [PostgreSQL row locks](https://www.postgresql.org/docs/16/explicit-locking.html),

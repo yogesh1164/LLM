@@ -1,5 +1,31 @@
 # V2 development checkpoint
 
+## Completed isolated integration: 2026-10-24
+
+Resumed clean from `259624a` on `feature/v2-production-hardening`. Frontend key
+lifecycle, duplicate/202/409 handling, bounded monitoring and restored partial
+results now cover fixed/SSE, custom-agent and custom-workflow execution. No prompts
+or credentials were added to submission metadata. Playwright mocked/browser tests
+and browser-to-enabled-backend checks pass. Backend schema verification is read-only.
+
+0006 is unchanged and verified on disposable PostgreSQL: all legacy history,
+constraints, repeat upgrade, transactional DDL failure and refused downgrade.
+The process-level drill passed ten groups, including four abrupt-crash points,
+heartbeat expiry, stale writes, two-process duplicate admission, browser integration
+and a binary-safe synthetic backup/restore with matching hashes/table digests.
+
+Final backend: Linux **269 passed / 1 XFAIL**; Windows **248 passed / 21 PostgreSQL
+skips / 1 XFAIL**. Frontend integrated fixture run: **26 passed**, including 23
+mocked/client/browser cases plus three real offline-runtime browser cases.
+See V2_VERIFICATION.md for evidence, checks and limitations.
+
+Operator-ready [rollout/rollback](V2_DURABLE_ROLLOUT.md), opt-in/disabled Compose
+overlays and safe private HTTPS checks are prepared, not executed against V1.
+Keep production durable mode off. Existing DBs/volumes, production configuration,
+dotenv files and main are preserved. No push, merge, production migration or deploy.
+Image high findings remain a release gate; approval is required before production
+migration/activation. Paid smoke tests remain separately approval-gated.
+
 ## Durable execution continuation: 2026-10-24
 
 Resumed from `89958d4` on `feature/v2-production-hardening`, initially clean.

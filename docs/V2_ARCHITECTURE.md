@@ -83,8 +83,9 @@ See [V2_DURABLE_EXECUTION.md](V2_DURABLE_EXECUTION.md) for the implemented journ
 lease/fencing protocol, API contract, additive 0006 migration, recovery guarantees
 and known failure cases. Defaults remain off. No existing database has been migrated.
 The backend has startup/periodic expiry detection and one-use idempotency keys;
-recovery never replays a paid call. Current browser key/202 handling remains a rollout
-prerequisite. Account/ownership approval is still pending independently.
+recovery never replays a paid call. Browser key/202 handling is now verified in
+isolation; production migration/activation and image-security clearance remain
+rollout gates. Account/ownership approval is still pending independently.
 
 The original design below remains context for future owner-aware jobs/continuation;
 it is not a claim that a resumable background queue has been implemented.

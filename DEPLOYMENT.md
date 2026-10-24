@@ -521,3 +521,9 @@ modified and ten new candidate files passed review and configured-secret scans.
 5. Refresh and confirm history remains available; check the browser console for
    errors. Remember the token is JavaScript-readable sessionStorage, scoped to
    the browser tab. Keep the retained QA agents/workflow disabled.
+## V2 durable execution approval gate
+
+The complete private opt-in procedure is in [V2_DURABLE_ROLLOUT.md](docs/V2_DURABLE_ROLLOUT.md).
+Its new overlays are inactive by default; do not apply 0006 or enable durable mode
+on either existing database without explicit operator approval. Isolated integration
+and migration evidence is in [V2_VERIFICATION.md](docs/V2_VERIFICATION.md).

@@ -6,3 +6,5 @@ out
 *.log
 *.tsbuildinfo
 .git
+test-results
+playwright-report

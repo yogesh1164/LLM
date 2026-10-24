@@ -1,5 +1,57 @@
 # V2 development checkpoint verification
 
+## Completed frontend and isolated activation: 2026-10-24
+
+Started clean on `feature/v2-production-hardening` at `259624a`. Baseline verified
+before changes: Windows **248 passed / 8 skipped / 1 XFAIL** (13.67s), Linux
+**256 passed / 1 XFAIL** (10.98s). No existing database migration, dotenv overwrite,
+production configuration change, public deployment, push or merge.
+
+| Final check | Actual result |
+|---|---|
+| Windows full backend | **248 passed, 21 PostgreSQL skips, 1 XFAIL**, 16.73s; zero failures |
+| Linux full backend with PostgreSQL | **269 passed, 1 XFAIL**, 20.10s; zero skips/failures |
+| PostgreSQL cases | **21 passed**: history, schema, constraints, transactional failure/revision, refused downgrade, repeat upgrade, five enabled API surfaces and concurrency |
+| Integrated frontend runtime run | **26 passed, zero failures/skips**: 14 client, 9 mocked browser and 3 real browser-to-enabled-API cases |
+| Standard frontend command | 23 client/mocked cases; three guarded runtime cases skip without the explicit disposable fixture |
+| Process-level drill | **10 groups passed**: schema; health/auth; four crash windows; heartbeat/expiry/stale result; eight requests across two processes; browser integration; synthetic backup/restore |
+| Static/dependencies | Ruff, pip check, ESLint, app/test TypeScript, encoding and production build pass; npm audit **0 vulnerabilities** |
+| Infrastructure | Base/enabled/disabled Compose validation and local actionlint pass. CI now runs mocked browser tests; hosted Actions remain unrun |
+| Review builds | Separate backend/frontend `v2-completion-review` tags built; production :local tags untouched |
+| Image smoke checks | Standalone frontend HTTP 200; same-origin API bundle; runtime package managers absent. Backend SDK 2.31.0, durable default off, offline fixture excluded |
+| Secrets / operator syntax | 109 candidate files passed configured-secret scan; candidate export and 16-commit pre-checkpoint history passed redacted Gitleaks. PowerShell 5.1 runbook blocks parse successfully |
+| Preservation | Existing DB/app container IDs/start times and named DB mounts unchanged. All newly created test fixtures stopped; no Docker volumes deleted. main remains 6bd5b32 |
+
+Successful ignored runtime evidence:
+`backups/agentflow-v2-durable-e2e-20261024054053/report.json`, redacted
+`frontend-tests.log`, generated-only provider call records and a synthetic archive.
+Nine content/journal table counts/digests plus the Alembic revision survived restore
+to a fresh networkless tmpfs server. SHA-256 matched source, Windows copy and
+restore copy. No real production backup/restore or live Gemini request occurred.
+The fake SDK stayed synchronous and used `gemini-3.5-flash-lite`.
+
+Corrected harness issues before final passes: Docker Desktop internal-only networks
+discarded publishing; fixture APIs now use a separate loopback ingress bridge with
+stable ports/readiness deadlines, while the DB stays internal. The guarded fixture
+blocks external Python connections. Initial UI selectors also matched Next's route
+announcer; selectors now target the submission panel. One initial runtime browser
+callback outlived test teardown; awaited status/route cleanup fixed it.
+
+Frontend changes: execution-client.ts, useDurableExecution.ts, ExecutionNotice.tsx,
+page.tsx, CustomAgentRunner.tsx, WorkflowBuilder.tsx, globals.css, Playwright config,
+three test files, test TypeScript config, package/lockfile and Docker ignore rules.
+Next dev generated frontend/AGENTS.md, retained with its local guide instructions.
+Backend changes: read-only app/verify_durable_schema.py, expanded PostgreSQL tests,
+guarded offline runtime module and repeatable runtime verifier. Migration 0006 is
+unchanged. Operator assets: inactive enabled/disabled overlays, private HTTPS checker
+and [exact PowerShell rollout/rollback](V2_DURABLE_ROLLOUT.md).
+
+Known limitations remain: synchronous cancellation XFAIL; unknown provider outcomes;
+new-key/cross-tab duplicates; lost keys after stale restores; unjournaled legacy
+records; shared bearer scope/runtime DB privileges. Prior scans remain **9 backend /
+8 frontend high, zero critical**. No suppression/security waiver; builds are not clean
+scan evidence. Production migration/activation require explicit operator approval.
+
 ## Durable execution verification: 2026-10-24
 
 Started clean at `89958d4` on `feature/v2-production-hardening`. These are source

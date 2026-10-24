@@ -18,7 +18,9 @@ import pytest
 from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine, select, text
+from sqlalchemy import inspect as inspect_db
 from sqlalchemy.engine import make_url
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
 from app import database as db
@@ -228,3 +230,161 @@ def test_live_postgres_heartbeat_preserves_ownership(postgres, monkeypatch):
             db.update_task(task_id, status="completed", result={"review": "done"})
 
     asyncio.run(asyncio.wait_for(exercise(), 3))
+
+
+def legacy_history():
+    """All original content tables, seeded only in the fixture schema."""
+    with db.SessionLocal.begin() as session:
+        task = db.Task(prompt="Offline legacy task", status="completed", total_tokens=5,
+                       result={"research": "legacy research"})
+        task.stages = [db.AgentExecution(agent="Research", status="completed", output="legacy research",
+                                         input_tokens=3, output_tokens=2)]
+        agent = db.CustomAgent(name="Offline legacy specialist", role="Offline",
+                              system_instructions="Offline", provider="gemini", model=settings.gemini_model)
+        session.add_all([task, agent]); session.flush()
+        execution = db.CustomAgentExecution(agent_id=agent.id, task="Offline history", status="completed",
+                                             provider="gemini", model=agent.model, result="legacy agent output",
+                                             input_tokens=3, output_tokens=2)
+        workflow = db.CustomWorkflow(name="Offline legacy workflow")
+        workflow.steps = [db.CustomWorkflowStep(agent_id=agent.id, position=0)]
+        session.add_all([execution, workflow]); session.flush()
+        run = db.CustomWorkflowRun(workflow_id=workflow.id, workflow_name=workflow.name, task="Offline run",
+                                   status="failed", result="legacy partial output")
+        run.steps = [db.CustomWorkflowStepRun(position=0, agent_name=agent.name, provider="gemini",
+                       model=agent.model, status="completed", output="legacy partial output",
+                       input_tokens=3, output_tokens=2)]
+        session.add(run)
+
+
+def content_snapshot(engine):
+    tables = [table for name, table in db.Base.metadata.tables.items() if name != "durable_executions"]
+    with engine.connect() as connection:
+        return {table.name: sorted([tuple(row) for row in connection.execute(select(table))], key=repr)
+                for table in tables}
+
+
+@pytest.mark.parametrize("postgres", ["0005_custom_workflows"], indirect=True)
+def test_0006_preserves_all_legacy_history_tracks_revision_and_reapplies_safely(postgres):
+    legacy_history()
+    before = content_snapshot(postgres)
+    command.upgrade(migration_config(), "head")
+    command.upgrade(migration_config(), "head")
+    assert content_snapshot(postgres) == before
+    inspector = inspect_db(postgres)
+    assert {c["name"] for c in inspector.get_columns("durable_executions")} == set(
+        db.DurableExecution.__table__.columns.keys())
+    assert [(i["name"], i["column_names"]) for i in inspector.get_indexes("durable_executions")
+            if not i.get("duplicates_constraint")] == [("ix_durable_expiry", ["state", "lease_expires_at"])]
+    uniques = {tuple(c["column_names"]) for c in inspector.get_unique_constraints("durable_executions")}
+    assert uniques == {("scope", "key_digest"), ("task_id",), ("agent_execution_id",), ("workflow_run_id",)}
+    fks = inspector.get_foreign_keys("durable_executions")
+    assert {fk["referred_table"] for fk in fks} == {"tasks", "custom_agent_executions", "custom_workflow_runs"}
+    assert all(fk["options"]["ondelete"] == "SET NULL" for fk in fks)
+    from app.verify_durable_schema import verify_schema
+    assert verify_schema(postgres)["schema_verified"] is True
+    assert {c["name"] for c in inspector.get_check_constraints("durable_executions")} == {
+        "ck_durable_state", "ck_durable_one_target"}
+    with postgres.connect() as connection:
+        assert connection.scalars(text("SELECT version_num FROM alembic_version")).all() == ["0006_durable_executions"]
+        assert connection.scalar(text("SELECT count(*) FROM durable_executions")) == 0
+
+
+@pytest.mark.parametrize("violation", ["duplicate_key", "orphan_target", "multiple_targets", "invalid_state"])
+def test_0006_database_constraints_reject_invalid_journals_atomically(postgres, violation):
+    legacy_history()
+    lease, _ = reserve()
+    with db.SessionLocal() as session:
+        original = session.get(db.DurableExecution, lease.id)
+        values = {column.name: getattr(original, column.name) for column in db.DurableExecution.__table__.columns}
+        values["id"] = str(uuid4())
+        if violation != "duplicate_key":
+            values["key_digest"] = uuid4().hex * 2
+        if violation == "orphan_target":
+            values["task_id"] = str(uuid4())
+        elif violation == "multiple_targets":
+            values["task_id"] = session.scalar(select(db.Task.id))
+            values["workflow_run_id"] = session.scalar(select(db.CustomWorkflowRun.id))
+        elif violation == "invalid_state":
+            values["state"] = "replay"
+    with pytest.raises(IntegrityError), postgres.begin() as connection:
+        connection.execute(db.DurableExecution.__table__.insert().values(**values))
+    with postgres.connect() as connection:
+        assert connection.scalar(text("SELECT count(*) FROM durable_executions")) == 1
+
+
+@pytest.mark.parametrize("postgres", ["0005_custom_workflows"], indirect=True)
+def test_0006_failed_ddl_rolls_back_table_and_revision_without_stamp(postgres, monkeypatch):
+    from alembic import op
+
+    legacy_history()
+    before = content_snapshot(postgres)
+    with monkeypatch.context() as patch:
+        def fail_index(*args, **kwargs):
+            raise RuntimeError("Injected fixture DDL failure")
+
+        patch.setattr(op, "create_index", fail_index)
+        with pytest.raises(RuntimeError, match="Injected fixture DDL failure"):
+            command.upgrade(migration_config(), "head")
+    assert "durable_executions" not in inspect_db(postgres).get_table_names()
+    with postgres.connect() as connection:
+        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0005_custom_workflows"
+    assert content_snapshot(postgres) == before
+    command.upgrade(migration_config(), "head")
+    assert "durable_executions" in inspect_db(postgres).get_table_names()
+
+
+def test_0006_unsupported_downgrade_preserves_journal_and_revision(postgres):
+    lease, _ = reserve()
+    with pytest.raises(RuntimeError, match="explicit retention/rollback decision"):
+        command.downgrade(migration_config(), "0005_custom_workflows")
+    with db.SessionLocal() as session:
+        assert session.get(db.DurableExecution, lease.id) is not None
+        assert session.scalar(text("SELECT version_num FROM alembic_version")) == "0006_durable_executions"
+
+
+def test_schema_verifier_detects_missing_index_even_with_correct_revision(postgres):
+    from app.verify_durable_schema import verify_schema
+
+    with postgres.begin() as connection:
+        connection.execute(text("DROP INDEX ix_durable_expiry"))
+    with pytest.raises(ValueError, match="expiry index"):
+        verify_schema(postgres)
+
+
+@pytest.mark.parametrize("surface", ["execute", "collaborate", "stream", "custom_agent", "custom_workflow"])
+def test_enabled_api_on_migrated_postgres_preserves_all_execution_contracts(postgres, monkeypatch, surface):
+    from fastapi.testclient import TestClient
+    from pydantic import SecretStr
+
+    from app import custom_agents, custom_workflows, main
+    from app.providers import StageResult
+    from tests.test_custom_workflows import add_agent, add_workflow
+    from tests.test_durable_execution import mock_fixed
+
+    monkeypatch.setattr(settings, "durable_execution_enabled", True)
+    monkeypatch.setattr(settings, "ai_provider", "gemini")
+    monkeypatch.setattr(settings, "gemini_api_key", SecretStr("offline-only"))
+    calls = mock_fixed(monkeypatch)
+
+    async def custom_provider(**kwargs):
+        calls.append(kwargs["name"])
+        return StageResult("Offline saved result", input_tokens=3, output_tokens=2)
+
+    monkeypatch.setattr(custom_agents, "run_custom_gemini_agent", custom_provider)
+    monkeypatch.setattr(custom_workflows, "run_custom_gemini_agent", custom_provider)
+    if surface == "custom_agent":
+        path = f"/api/agents/{add_agent('Offline specialist')}/execute"
+    elif surface == "custom_workflow":
+        path = f"/api/custom-workflows/{add_workflow([add_agent('Offline specialist')])}/execute"
+    else:
+        path = f"/api/workflows/{surface}"
+    with TestClient(main.app, headers={"Authorization": "Bearer " + "t" * 32}) as client:
+        key = str(uuid4())
+        first = client.post(path, json={"task": "Offline enabled integration"}, headers={"Idempotency-Key": key})
+        assert first.status_code == 200, first.text
+        again = client.post(path, json={"task": "Offline enabled integration"}, headers={"Idempotency-Key": key})
+        assert again.status_code == 202 and again.json()["state"] == "completed"
+        assert client.get(first.headers["location"]).json()["state"] == "completed"
+        assert len(calls) == (1 if surface.startswith("custom_") else 5)
+    with db.SessionLocal() as session:
+        assert len(session.scalars(select(db.DurableExecution)).all()) == 1

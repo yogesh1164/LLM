@@ -89,6 +89,8 @@ jobs:
       - run: npx tsc --noEmit
       - run: npm run check:encoding
       - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
 
   dependency-audit:
     runs-on: ubuntu-24.04

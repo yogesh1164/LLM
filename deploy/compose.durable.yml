@@ -1,0 +1,13 @@
+# Opt-in only, after approved migration/rehearsal. Never used by default.
+# Does not change PostgreSQL, networks, ports, credentials, or Caddy.
+services:
+  backend:
+    image: ${V2_BACKEND_IMAGE:?Set the reviewed V2 backend image tag}
+    environment:
+      DURABLE_EXECUTION_ENABLED: "true"
+  migrate:
+    image: ${V2_BACKEND_IMAGE:?Set the reviewed V2 backend image tag}
+    environment:
+      DURABLE_EXECUTION_ENABLED: "false"
+  frontend:
+    image: ${V2_FRONTEND_IMAGE:?Set the reviewed V2 frontend image tag}

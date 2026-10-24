@@ -2,6 +2,8 @@ node_modules/
 .next/
 out/
 coverage/
+frontend/test-results/
+frontend/playwright-report/
 dist/
 build/
 .venv/

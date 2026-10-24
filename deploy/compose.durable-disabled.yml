@@ -1,0 +1,5 @@
+# Apply LAST, only in a controlled rollback with traffic stopped and jobs reconciled.
+services:
+  backend:
+    environment:
+      DURABLE_EXECUTION_ENABLED: "false"

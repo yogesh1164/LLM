@@ -6,6 +6,8 @@ import { AgentStudio } from "./AgentStudio";
 import { WorkflowBuilder } from "./WorkflowBuilder";
 import { AppIcon, type IconName } from "./AppIcon";
 import { apiFetch, getApiTokenSnapshot, subscribeApiToken } from "./api";
+import { useDurableExecution } from "./useDurableExecution";
+import { ExecutionNotice } from "./ExecutionNotice";
 import "./results.css";
 import "./tasks.css";
 
@@ -13,7 +15,7 @@ type Stage = AgentStage & { retry?: string };
 type Run = { id: string; status: string; task: string; created_at: string; error?: string | null; elapsed_ms?: number | null; total_tokens?: number | null; estimated_cost?: number | null; stages?: Stage[] };
 type Dashboard = { agents: number; provider: string; model: string; web_search_enabled: boolean; completed: number; failed: number; workflows: number; token_usage: number | null; estimated_cost: number | null; history: Run[] };
 type Source = { url: string; title?: string | null };
-type Result = { status?: string; task_id?: string; orchestrator?: string; plan?: string; research?: string; analysis?: string; report?: string; review?: string; sources?: Source[]; total_tokens?: number; input_tokens?: number; output_tokens?: number; estimated_cost?: number };
+type Result = { status?: string; task_id?: string; orchestrator?: string; plan?: string; research?: string; analysis?: string; report?: string; review?: string; sources?: Source[]; total_tokens?: number; input_tokens?: number; output_tokens?: number; estimated_cost?: number; stages?: Stage[] };
 type SavedTask = { id: string; task: string; status: string; result?: Result | null; stages?: Stage[]; error?: string | null; elapsed_ms?: number | null; created_at: string };
 const nav = ["Overview", "AI Workspace", "Agent Studio", "Workflows", "Tasks & Execution", "Knowledge Base", "Reports"];
 const navigationIcons: IconName[] = ["overview", "workspace", "agents", "workflow", "tasks", "knowledge", "reports"];
@@ -32,12 +34,13 @@ export default function Home() {
   const [collapsed, setCollapsed] = useState(false);
   const [light, setLight] = useState(false);
   const [task, setTask] = useState("");
-  const [result, setResult] = useState<Result | null>(null);
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
+  const execution = useDurableExecution<Result>("/api/workflows/stream");
+  const result = execution.data;
+  const busy = execution.busy;
   const [data, setData] = useState<Dashboard | null>(null);
   const [apiError, setApiError] = useState("");
-  const [stages, setStages] = useState<Stage[]>([]);
+  const [liveStages, setStages] = useState<Stage[]>([]);
+  const stages = result?.stages ?? liveStages;
   const [reports, setReports] = useState<SavedTask[]>([]);
   const apiToken = useSyncExternalStore(subscribeApiToken, getApiTokenSnapshot, () => null);
   const [tokenInput, setTokenInput] = useState("");
@@ -55,11 +58,10 @@ export default function Home() {
     return () => { mounted = false; };
   }, [authReady, apiToken]);
   useEffect(() => {
-    if (!busy || !apiToken) return;
-    const timer = window.setInterval(() => {
-      apiFetch("/api/dashboard").then(r => r.ok ? r.json() : null).then((d: Dashboard | null) => { if (d) setData(d); }).catch(() => undefined);
-    }, 1500);
-    return () => window.clearInterval(timer);
+    if (!apiToken) return;
+    const controller = new AbortController();
+    apiFetch("/api/dashboard", { signal: controller.signal }).then(r => r.ok ? r.json() : null).then((d: Dashboard | null) => { if (d) setData(d); }).catch(() => undefined);
+    return () => controller.abort();
   }, [busy, apiToken]);
   useEffect(() => {
     if (!apiToken || section !== "Reports" || !data?.history.length) return;
@@ -69,29 +71,14 @@ export default function Home() {
     return () => { mounted = false; };
   }, [apiToken, section, data]);
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setError(""); setResult(null); setBusy(true);
-    try {
-      setStages(["Orchestrator", "Research", "Analysis", "Report", "Review"].map(agent => ({ agent, status: "pending" })));
-      const response = await apiFetch("/api/workflows/stream", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ task }) });
-      if (!response.ok) { const body = await response.json(); throw new Error(body.detail ?? "Workflow failed"); }
-      if (!response.body) throw new Error("Streaming is unavailable in this browser");
-      const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = "";
-      while (true) {
-        const { value, done } = await reader.read(); if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const events = buffer.split("\n\n"); buffer = events.pop() ?? "";
-        for (const item of events) {
-          const line = item.split("\n").find(value => value.startsWith("data: ")); if (!line) continue;
-          const event = JSON.parse(line.slice(6)) as { type: string; agent?: string; status?: string; output?: string; error?: string; elapsed_ms?: number; detail?: string; attempt?: number; max_attempts?: number; delay_seconds?: number; status_code?: number; task_id?: string; orchestrator?: string; plan?: string; research?: string; analysis?: string; report?: string; review?: string; sources?: Source[]; total_tokens?: number; input_tokens?: number; output_tokens?: number; estimated_cost?: number };
-          if (event.type === "stage_retry" && event.agent) setStages(current => current.map(stage => stage.agent === event.agent ? { ...stage, status: "retrying", retry: `Retry ${event.attempt}/${event.max_attempts} after HTTP ${event.status_code} · ${event.delay_seconds}s` } : stage));
-          if (event.type === "stage" && event.agent) setStages(current => current.map(stage => stage.agent === event.agent ? { ...stage, status: event.status ?? "pending", output: event.output ?? stage.output, error: event.error ?? stage.error, elapsed_ms: event.elapsed_ms ?? stage.elapsed_ms } : stage));
-          if (event.type === "result") { setResult({ ...event, status: "completed", orchestrator: event.orchestrator, plan: event.plan, research: event.research ?? "", analysis: event.analysis ?? "", report: event.report ?? "", review: event.review ?? "" }); setTask(""); }
-          if (event.type === "error") throw new Error(event.detail ?? "Workflow failed");
-        }
-      }
-      const refresh = await apiFetch("/api/dashboard"); if (refresh.ok) setData(await refresh.json());
-    } catch (e) { setError(e instanceof Error ? e.message : "Could not reach the AgentFlow API"); }
-    finally { setBusy(false); }
+    event.preventDefault();
+    if (execution.client.getSnapshot().busy) return;
+    setStages(["Orchestrator", "Research", "Analysis", "Report", "Review"].map(agent => ({ agent, status: "pending" })));
+    const saved = await execution.client.submit(task.trim(), event => {
+      if (event.type === "stage_retry" && typeof event.agent === "string") setStages(current => current.map(stage => stage.agent === event.agent ? { ...stage, status: "retrying", retry: `Retry ${event.attempt}/${event.max_attempts} after HTTP ${event.status_code}` } : stage));
+      if (event.type === "stage" && typeof event.agent === "string") setStages(current => current.map(stage => stage.agent === event.agent ? { ...stage, status: typeof event.status === "string" ? event.status : "pending", output: typeof event.output === "string" ? event.output : stage.output, error: typeof event.error === "string" ? event.error : stage.error, elapsed_ms: typeof event.elapsed_ms === "number" ? event.elapsed_ms : stage.elapsed_ms } : stage));
+    });
+    if (saved?.status === "completed") setTask("");
   }
   async function removeTask(taskId: string) {
     if (!window.confirm("Delete this task and its saved stage outputs? This cannot be undone.")) return;
@@ -130,7 +117,7 @@ export default function Home() {
           <div className="overview-grid"><section className="card activity-card"><div className="section-head"><div><h2>Recent execution history</h2><p>Persisted workflow runs</p></div><button className="text-button" onClick={() => setSection("Tasks & Execution")}>View all <AppIcon name="arrow"/></button></div>{data?.history.length ? <div className="run-list">{data.history.slice(0, 5).map(run => <RunRow key={run.id} run={run}/>)}</div> : <div className="empty"><span><AppIcon name="clock"/></span><b>{data ? "No executions yet" : "Loading executions"}</b><small>{data ? "Start a task to see real workflow activity here." : "Fetching live dashboard data…"}</small></div>}<div className="usage-strip"><div><small>Token usage · latest 50 tasks</small><b>{data?.token_usage?.toLocaleString() ?? "Unavailable"}</b></div><div><small>Estimated API cost · configured rates</small><b>{data?.estimated_cost != null ? `$${data.estimated_cost.toFixed(6)}` : "Unavailable"}</b></div></div></section>
             <section className="card agent-card"><div className="section-head"><div><h2>Agent activity</h2><p>Your built-in workflow team</p></div><button className="text-button" onClick={() => setSection("Agent Studio")}>Agent studio <AppIcon name="arrow"/></button></div><div className="agent-mini-list">{roster.map((agent, i) => <div className="agent-mini" key={agent.name}><span className={`agent-symbol ${agent.color}`}>{agent.name[0]}</span><div><b>{agent.name}</b><small>{i === 1 ? (data?.web_search_enabled ? (data.provider === "gemini" ? "Google Search grounding enabled" : "Hosted web search enabled") : "Web search disabled") : i === 0 ? "Workflow coordination" : "Model knowledge only"}</small></div><span className="status-pill">Built in</span></div>)}</div><div className="capability-note">Research uses hosted web search when enabled; source links appear with completed runs.</div></section></div>
         </>}
-        {section === "AI Workspace" && <><div className="page-heading"><div><div className="eyebrow">MULTI-AGENT WORKSPACE</div><h1>What can your team work on?</h1><p>Submit a task to run Orchestrator → Research → Analysis → Report → Review.</p></div><span className="live-label"><i/> API connected when available</span></div><div className="workspace-layout"><section className="card chat-card"><div className="chat-toolbar"><div><b>New conversation</b><small>Five agent workflow · {data?.provider ?? "AI"} provider</small></div><label>Workflow <select aria-label="Select workflow"><option>Research & report</option></select></label></div><div className="chat-body">{!result && !busy && <div className="welcome"><span className="welcome-mark"><AppIcon name="sparkles"/></span><h2>Make progress on complex work.</h2><p>Your task will pass through five specialized agents in sequence.</p><div className="suggestions" onClick={() => setTask("Analyze the key risks and opportunities in launching a new subscription product.")}>Analyze product launch risks <AppIcon name="arrow"/></div></div>}{busy && <div className="progress-box" role="status" aria-live="polite"><div className="spinner"/><div><b>Agents are collaborating</b><p>Live stage updates from the API. Research may take longer while it searches the web.</p></div></div>}{(result || stages.some(stage => stage.output)) && <ResultsPanel output={result} stages={stages} workflowStatus={busy ? "running" : result?.status ?? "failed"} />}{error && <div className="notice error" role="alert">{error}</div>}</div><form className="composer" onSubmit={submit}><textarea value={task} onChange={e => setTask(e.target.value)} maxLength={1000} minLength={3} required aria-label="Task for agents" placeholder="Describe a task or paste context for your agents…"/><div className="composer-bottom"><small>{task.length}/1000 · Search configuration shown above · No arbitrary commands</small><button className="primary" disabled={busy || task.trim().length < 3}>{busy ? "Working…" : <>Run workflow <AppIcon name="arrow"/></>}</button></div></form></section><aside className="card workflow-summary"><h2>Workflow stages</h2><p>Updated from real stage events via SSE.</p>{["Orchestrator", "Research", "Analysis", "Report", "Review"].map((s, i) => { const stage = stages.find(item => item.agent === s); const status = stage?.status ?? (result ? "completed" : "pending"); return <div className="stage" key={s}><span className={`stage-number ${status === "completed" ? "done" : status === "running" ? "active" : ""}`}>{status === "completed" ? <AppIcon name="check"/> : i + 1}</span><div><b>{s}</b><small>{status}{stage?.retry ? ` · ${stage.retry}` : ""}{stage?.elapsed_ms != null ? ` · ${(stage.elapsed_ms / 1000).toFixed(1)}s` : ""}{stage?.error ? ` · ${stage.error}` : ""}</small></div>{i < 4 && <span className="stage-line"/>}</div>; })}<div className="approval-note"><b>Research sources</b><small>Google Search grounding is read-only. Sensitive action tools are not enabled.</small></div></aside></div></>}
+        {section === "AI Workspace" && <><div className="page-heading"><div><div className="eyebrow">MULTI-AGENT WORKSPACE</div><h1>What can your team work on?</h1><p>Submit a task to run Orchestrator → Research → Analysis → Report → Review.</p></div><span className="live-label"><i/> API connected when available</span></div><div className="workspace-layout"><section className="card chat-card"><div className="chat-toolbar"><div><b>New conversation</b><small>Five agent workflow · {data?.provider ?? "AI"} provider</small></div><label>Workflow <select aria-label="Select workflow"><option>Research & report</option></select></label></div><div className="chat-body">{!result && !busy && <div className="welcome"><span className="welcome-mark"><AppIcon name="sparkles"/></span><h2>Make progress on complex work.</h2><p>Your task will pass through five specialized agents in sequence.</p><div className="suggestions" onClick={() => setTask("Analyze the key risks and opportunities in launching a new subscription product.")}>Analyze product launch risks <AppIcon name="arrow"/></div></div>}{busy && <div className="progress-box" role="status" aria-live="polite"><div className="spinner"/><div><b>Agents are collaborating</b><p>Live stage updates from the API. Research may take longer while it searches the web.</p></div></div>}{(result || stages.some(stage => stage.output)) && <ResultsPanel output={result} stages={stages} workflowStatus={execution.state} />}</div><ExecutionNotice execution={execution} client={execution.client} onNew={() => { setTask(""); setStages([]); }} /><form className="composer" onSubmit={submit}><textarea value={task} onChange={e => setTask(e.target.value)} maxLength={1000} minLength={3} required aria-label="Task for agents" placeholder="Describe a task or paste context for your agents…"/><div className="composer-bottom"><small>{task.length}/1000 · Search configuration shown above · No arbitrary commands</small><button className="primary" disabled={busy || task.trim().length < 3}>{busy ? "Working…" : execution.submission ? "Retry same submission" : <>Run workflow <AppIcon name="arrow"/></>}</button></div></form></section><aside className="card workflow-summary"><h2>Workflow stages</h2><p>Updated from real stage events via SSE.</p>{["Orchestrator", "Research", "Analysis", "Report", "Review"].map((s, i) => { const stage = stages.find(item => item.agent === s); const status = stage?.status ?? (result ? "completed" : "pending"); return <div className="stage" key={s}><span className={`stage-number ${status === "completed" ? "done" : status === "running" ? "active" : ""}`}>{status === "completed" ? <AppIcon name="check"/> : i + 1}</span><div><b>{s}</b><small>{status}{stage?.retry ? ` · ${stage.retry}` : ""}{stage?.elapsed_ms != null ? ` · ${(stage.elapsed_ms / 1000).toFixed(1)}s` : ""}{stage?.error ? ` · ${stage.error}` : ""}</small></div>{i < 4 && <span className="stage-line"/>}</div>; })}<div className="approval-note"><b>Research sources</b><small>Google Search grounding is read-only. Sensitive action tools are not enabled.</small></div></aside></div></>}
         {section === "Agent Studio" && <AgentStudio />}
         {section === "Workflows" && <WorkflowBuilder />}
         {section === "Tasks & Execution" && <><PageHeading eyebrow="RUN LOG" title="Tasks & Execution" subtitle="Persistent task history with real stage state and usage."/>{apiError && <div className="notice error" role="alert">{apiError}</div>}{data?.history.length ? <section className="card table-card"><div className="table-head"><span aria-hidden="true"></span><span>Task</span><span>Status</span><span>Action</span></div>{data.history.map(run => <RunRow key={run.id} run={run} onDelete={() => void removeTask(run.id)}/>)}</section> : <section className="card empty"><span><AppIcon name="clock"/></span><b>{data ? "No runs recorded" : "Loading runs"}</b><small>{data ? "Run a workflow to see persisted task history." : "Fetching execution history…"}</small></section>}</>}

@@ -17,6 +17,45 @@ production RPO/RTO or prove key-custody recovery.
 
 ## Prepared rclone transfer (not verified against Google Drive)
 
+**2026-10-25 gate:** Google Drive delivery is **BLOCKED BY OPERATOR** pending
+manual OAuth client repair and separately authorized connectivity/recovery tests.
+Do not put a client ID, client secret, token, or age identity in this repository,
+command arguments, shell history, logs, or a support transcript. Engineering did
+not access the Drive account or change its remote configuration. The adapter's
+synthetic header/manifest checks prevent accidental `.sql`/dump upload; they are
+not cryptographic proof that a deliberately forged `.age` file is valid. The
+age decryption step in the separate restore drill provides that proof.
+
+### Operator-only OAuth repair and connectivity gate
+
+In a private operator session, use Google's own OAuth client management and
+`rclone config` to correct the `agentflow-gdrive` remote interactively. Keep the
+rclone configuration under the backup worker's restricted profile and verify its
+filesystem permissions. After authorization, confirm the remote type/name and
+chosen scope through an operator-private **redacted** configuration review; do
+not print a raw `rclone config show` or token.
+
+[rclone's Drive documentation](https://rclone.org/drive/#scopes) says
+`drive.file` can access only files/folders rclone creates. The restricted folder
+created previously in the Drive web UI may therefore be invisible to this scope.
+[Google's scope documentation](https://developers.google.com/workspace/drive/api/guides/api-specific-auth)
+also permits files explicitly opened/shared with an app through a picker, but
+rclone's documented simple path is an rclone-created folder. The operator must
+choose and review either a new restricted rclone-created destination under
+`drive.file`, or a broader approved scope for the existing folder. Do not infer
+that the current web-created folder is accessible. Record the exact remote,
+folder ID/path, scope, access list, retention policy and approval separately.
+
+After that decision, test with a new **synthetic, authenticated age** artifact
+and unique remote object name: list the approved folder, run this adapter,
+confirm `verified` status and full readback, download the exact object to a new
+protected local path, compare its SHA-256, authenticate-decrypt with a recovery
+identity, validate `pg_restore --list`, and restore to a new disposable PostgreSQL
+database. Check table snapshots and account readiness, then record retrieval
+time and failure/retry behavior. Use no production data or existing services.
+Until these steps pass, **actual Google Drive upload, download and recovery are
+UNVERIFIED** and `off_host_verified` remains false.
+
 `ops/backup/rclone_offhost.py` is an opt-in PowerShell 5.1-compatible wrapper for
 an already authenticated rclone remote. It accepts exactly one canonical backup
 `.age` artifact with its matching local JSON manifest, validates the age ciphertext
@@ -30,7 +69,12 @@ It never invokes `rclone config`, never loads or prints the rclone config, never
 accepts a key, and never receives the plaintext PostgreSQL dump. A local JSON
 status report records the object name, local ciphertext SHA-256 and transfer
 state; command output and diagnostics are suppressed. A failed copy or check exits
-nonzero and produces a failed report without a success attestation.
+nonzero and produces a failed report without a success attestation. Use a **new
+report path for each attempt**. The adapter creates a failed report before
+invoking rclone and refuses an existing report path, so an older verified report
+cannot be reused. A failed or interrupted copy may leave an orphaned remote
+object; after authorization, inspect that exact object and reconcile it before
+a retry with a new report path. Never treat a failed report as recovery acceptance.
 
 After authentication is repaired and separately approved, the operator may use:
 

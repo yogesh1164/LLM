@@ -1,5 +1,30 @@
 # Production database role change: offline review package
 
+## 2026-10-25 review gate
+
+This remains an **offline proposal**, not an authorized production change.
+The last read-only production catalog audit showed the shared `agentflow` role
+with SUPERUSER, CREATEDB, CREATEROLE, REPLICATION and BYPASSRLS, and Alembic
+revision 0005. The `ready_to_apply` decision is false. Prior PostgreSQL 16
+disposable-fixture tests covered 0005 → 0006 → 0007, runtime authentication,
+ownership/session/journal/heartbeat operations, 14 forbidden administrative or
+schema operations, backup SELECT permissions and rollback/error handling.
+This continuation could not repeat containerized PostgreSQL tests because the
+local Docker daemon was unavailable. Hosted CI for source `0aab361` passed the
+least-privilege and durable PostgreSQL jobs; it does not test production state.
+
+Before execution, require an operator-approved encrypted recovery point and
+restore drill, exact database/role/revision re-audit, maintenance window,
+credential custody, separate runtime/migration/backup/operator connection
+strings, and explicit approvals for creating roles, rotating credentials,
+applying 0006/0007, changing grants, switching application connections and
+activating accounts/durable execution. Rehearse both the grant-change and
+connection-string rollback against disposable PostgreSQL 16 with the actual
+candidate images. Schema and ownership-audit migrations are not safely
+reversible by simply restoring old grants; a data-preserving rollback or isolated
+restore and traffic-switch plan needs separate review. No existing database,
+role, password, grant or connection string was changed in this continuation.
+
 ## Current status — 2026-10-24
 
 The saved run is a read-only catalog observation, not a role rollout. It records

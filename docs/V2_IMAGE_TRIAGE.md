@@ -1,5 +1,17 @@
 # V2 review-image vulnerability triage
 
+## Hosted Grype package inventory — 2026-10-25
+
+The pushed `0aab361` branch has two completed hosted CI runs. Both built images
+successfully and failed their Grype HIGH gates. The latest run found **14 distinct
+HIGH IDs / 0 CRITICAL per image** (55 backend and 54 frontend Debian package
+matches). See [the exact CVE/package/digest inventory](V2_GRYPE_CVE_INVENTORY.md).
+The earlier Scout report's one HIGH per image was produced for different local
+image IDs and scanner data; it cannot be compared as an equivalent scan. No
+supported Trixie fix was identified for these 14 tracked findings. The local
+Docker daemon is unavailable, so final candidate rebuild/rescan and exact-digest
+scanner comparison are pending. All advisories remain open without suppression.
+
 ## Latest rebuilt candidates and vendor-status review — 2026-10-24
 
 The newest immutable review images were scanned by Docker Scout 1.26.0 after

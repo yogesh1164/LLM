@@ -74,6 +74,9 @@ def upload(source, *, manifest=None, remote="agentflow-gdrive", folder, rclone="
     The caller must invoke this only after the remote has been authenticated.
     The function itself does not run config/authentication commands.
     """
+    # A prior verified report must never be mistaken for this attempt's result.
+    if report_path and Path(report_path).exists():
+        raise TransferError("Transfer report path already exists")
     source_path = Path(source)
     manifest = manifest or source_path.with_suffix(".json")
     source, target = validate(source, manifest, remote, folder)
@@ -81,19 +84,17 @@ def upload(source, *, manifest=None, remote="agentflow-gdrive", folder, rclone="
     result = {"status": "failed", "artifact": source.name, "sha256": digest,
               "remote_object": target, "integrity_verified": False,
               "retention_policy": "operator-managed; remote deletion disabled"}
-    try:
-        _invoke(rclone, ["copyto", "--immutable", "--no-traverse", str(source), target], runner)
-        # --download forces a full content readback, independent of remote hash support.
-        remote_folder = target.rsplit("/", 1)[0]
-        _invoke(rclone, ["check", "--download", "--one-way", str(source.parent),
-                         remote_folder, "--include", "/" + source.name], runner)
-        if sha256(source) != digest:
-            raise TransferError("Source ciphertext changed during transfer")
-        result.update(status="verified", integrity_verified=True)
-    except TransferError:
-        if report_path:
-            Path(report_path).write_text(json.dumps(result, sort_keys=True) + "\n", encoding="utf-8")
-        raise
+    if report_path:
+        with Path(report_path).open("x", encoding="utf-8") as stream:
+            stream.write(json.dumps(result, sort_keys=True) + "\n")
+    _invoke(rclone, ["copyto", "--immutable", "--no-traverse", str(source), target], runner)
+    # --download forces a full content readback, independent of remote hash support.
+    remote_folder = target.rsplit("/", 1)[0]
+    _invoke(rclone, ["check", "--download", "--one-way", str(source.parent),
+                     remote_folder, "--include", "/" + source.name], runner)
+    if sha256(source) != digest:
+        raise TransferError("Source ciphertext changed during transfer")
+    result.update(status="verified", integrity_verified=True)
     if report_path:
         Path(report_path).write_text(json.dumps(result, sort_keys=True) + "\n", encoding="utf-8")
     return result

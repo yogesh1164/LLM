@@ -1,5 +1,15 @@
 # CVE-2026-85091 — vulnerability assessment and pending acceptance
 
+## 2026-10-25 review
+
+Debian still marks Trixie `zlib1g 1:1.3.dfsg+really1.3.1-1+b1` vulnerable
+and has [no fixed version](https://security-tracker.debian.org/tracker/CVE-2026-85091).
+Hosted Grype 0.97.1 at `0aab361` also reports this HIGH in both images, among
+13 other distinct HIGH IDs per image. Its backend/frontend image digests and
+the full [package inventory](V2_GRYPE_CVE_INVENTORY.md) differ from the earlier
+local Scout images below. No vendor adjudication, approved exception, supported
+patch or new image scan has changed the **UNRESOLVED / NOT ACCEPTED** status.
+
 Assessment ID: AF-V2-ZLIB-20261024. Status: **UNRESOLVED / NOT ACCEPTED**.
 Prepared by engineering; no operator signature or security exception is implied.
 Scope: independently built V2 backend/frontend review images, not a scan or change

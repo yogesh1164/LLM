@@ -1,5 +1,12 @@
 # Legacy record ownership inventory and explicit mapping
 
+An [empty selection template](V2_OWNERSHIP_SELECTION_TEMPLATE.json) is provided
+for an operator review. It has no account or component assignment and is not a
+valid apply manifest. Leaving `mappings` empty keeps all legacy components
+unassigned and inaccessible to ordinary users at activation; administrators
+also cannot access null-owned content through normal account-scoped endpoints.
+The operator must separately review provenance and approve any future mapping.
+
 Prepared tooling; no existing database was inspected or modified and no production
 owner was selected. Migration `0007_accounts_ownership` remains unchanged: it adds
 nullable owner foreign keys and account/audit tables without assigning any row.

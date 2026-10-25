@@ -1,6 +1,21 @@
 # V2 development checkpoint verification
 
-## Recovery continuation — 2026-10-25 (current)
+## Five-blocker continuation — 2026-10-25
+
+| Check | Result / limit |
+|---|---|
+| Git/CI | Clean baseline `0aab361` on `feature/v2-production-hardening`, matching remote. Two hosted runs at that SHA passed eight jobs and failed backend/frontend Grype HIGH gates. This new local continuation has no hosted run. |
+| Windows backend + backup | **377 passed, 42 skipped, 1 XFAIL**, 46 SQLite reflection warnings, 68.19 s. The skipped PostgreSQL/Linux cases were not claimed as locally verified. Focused rclone adapter: **11 passed**. |
+| Windows Playwright | Two complete runs: **29 passed, 3 skipped** each, exit code 0 at 42.2 s and 30.4 s. Prior teardown hang did not reproduce. Three guarded runtime cases need the isolated API/PostgreSQL fixture. |
+| Static/dependencies | Ruff, pip check, frontend ESLint, TypeScript, nine-file encoding and Next.js 16.4.2 production build passed; npm audit 0 vulnerabilities. Local pip-audit module unavailable. |
+| Hosted container/PG/security | At `0aab361`, hosted backend, frontend, least-privilege PostgreSQL, durable PostgreSQL, encrypted-backup drill, dependency-audit, Compose and secrets jobs passed. Both image jobs failed Grype. Exact HIGH inventory is [here](V2_GRYPE_CVE_INVENTORY.md). |
+| Local container work | `docker compose` production + accounts + roles + limits `config --quiet --no-interpolate` passed. Docker API unavailable; no isolated PostgreSQL rerun, image build, package-layer inspection, Scout rescan or image smoke check in this continuation. Existing containers/volumes were untouched. |
+| Google Drive | No authentication, upload, download or actual off-host restore. Local-only rclone evidence from the prior checkpoint plus new mocked failure test only. |
+
+No production or development database, role, volume, service, environment file,
+Drive folder, backup or legacy record was modified. No paid provider call.
+
+## Earlier recovery continuation — 2026-10-25
 
 | Check | Result |
 |---|---|

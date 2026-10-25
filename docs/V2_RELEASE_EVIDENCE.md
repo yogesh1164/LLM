@@ -1,6 +1,31 @@
 # V2 production-readiness evidence — 2026-10-25
 
-## Recovery continuation — 2026-10-25 (current)
+## Five-blocker engineering continuation — 2026-10-25
+
+Baseline `0aab361564f35979e92d4472998fb24687167e71` was clean on
+`feature/v2-production-hardening`; the remote branch matched it. No production
+or development database, service, volume, environment file, Google account,
+backup or ownership record was changed. No push, merge, deployment, OAuth
+exchange or paid Gemini request occurred.
+
+| Gate | Current result |
+|---|---|
+| Image security | Hosted CI at `0aab361`: [run 40164676589](https://github.com/yogesh1164/LLM/actions/runs/40164676589) and [run 40164674211](https://github.com/yogesh1164/LLM/actions/runs/40164674211) each passed eight jobs and failed the two image HIGH gates. Latest Grype 0.97.1 / DB v6.1.10 found **14 distinct HIGH CVEs, 0 CRITICAL** per image (55 backend and 54 frontend affected-package rows). Full IDs, versions, digests, fix status and the non-equivalent older Scout comparison are in [the inventory](V2_GRYPE_CVE_INVENTORY.md). Debian has no supported Trixie fixes for these findings as checked; no image rebuild or waiver. |
+| Google Drive | Local adapter accepts only canonical age-named ciphertext and matching manifest. New report-path protection and readback-failure test pass. OAuth credentials await operator repair; Drive delivery and off-host recovery are **BLOCKED BY OPERATOR / UNVERIFIED**. `drive.file` may not access the web-created folder; operator destination/scope decision required. |
+| Playwright | Two full Windows runs each **29 passed, 3 guarded skips, 0 failed**, normal process exit (42.2 s and 30.4 s). The earlier teardown hang was not reproduced; no timeout or test skip was added. |
+| PostgreSQL roles | Offline role and migration package reviewed; previous disposable PostgreSQL 16 and hosted CI tests passed. Local Docker daemon unavailable, so no new PostgreSQL fixture run. Production remains revision 0005 with overprivileged shared role per last read-only audit; rollout not approved. |
+| Legacy ownership | Empty quarantine selection template added. Prior synthetic ownership, isolation, replay and concurrency tests remain valid; Windows full suite passed. Production legacy records remain unassigned and quarantined. |
+| Local regression | Windows backend/backup **377 passed, 42 skipped, 1 XFAIL**; focused rclone **11 passed**. Ruff, pip check, ESLint, TypeScript, encoding, frontend production build and quiet Compose config passed; npm audit found 0 vulnerabilities. Local pip-audit module and Docker daemon unavailable; hosted CI passed dependency audit, containerized tests, Compose, Hadolint and secret scan at `0aab361`. |
+
+Engineering completion estimate remains **96%** because the release-critical
+security, live off-host recovery and production activation gates are unresolved.
+Status: **NOT READY**. Required operator decisions are Drive credential/destination
+authorization, a supported security remediation or explicit scoped risk decision,
+production role/credential/migration activation approval and recovery plan. The
+operator has chosen to leave legacy records unassigned; no mapping approval is
+needed to preserve quarantine, but account access to those records remains absent.
+
+## Earlier recovery continuation — 2026-10-25
 
 Recovered the six uncommitted source/test/doc files from the interrupted session
 without resetting them. No production/development database, role, volume, service,

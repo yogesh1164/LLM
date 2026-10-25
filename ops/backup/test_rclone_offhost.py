@@ -72,6 +72,27 @@ def test_reports_failed_remote_command_without_echoing_diagnostics(tmp_path):
     assert "synthetic-redacted-diagnostic" not in report.read_text()
 
 
+def test_readback_failure_remains_failed_and_existing_report_cannot_be_reused(tmp_path):
+    artifact = encrypted(tmp_path)
+    report = tmp_path / "status.json"
+    calls = 0
+
+    def runner(args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return subprocess.CompletedProcess(args, 0 if calls == 1 else 1,
+                                           stdout=b"", stderr=b"synthetic-secret")
+
+    with pytest.raises(adapter.TransferError):
+        adapter.upload(artifact, folder="backups", runner=runner, report_path=report)
+    assert calls == 2
+    assert json.loads(report.read_text())["status"] == "failed"
+    assert "synthetic-secret" not in report.read_text()
+    with pytest.raises(adapter.TransferError, match="already exists"):
+        adapter.upload(artifact, folder="backups", runner=runner, report_path=report)
+    assert calls == 2
+
+
 def test_detects_source_change_during_transfer(tmp_path):
     artifact = encrypted(tmp_path)
     calls = 0

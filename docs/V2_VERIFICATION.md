@@ -1,5 +1,43 @@
 # V2 development checkpoint verification
 
+## Recovery continuation — 2026-10-25 (current)
+
+| Check | Result |
+|---|---|
+| Recovered worktree | Branch `feature/v2-production-hardening`, base `c08ceeda4ea93a3113e5daa30ca2199481c48cf9`; four modified docs and two untracked backup Python files preserved, no unrelated changes. |
+| Real rclone local adapter | Temporary `local-only` config and synthetic age-header fixture; `copyto` succeeded. Initial file-to-file `check` failed, revealing a syntax bug. After correction, filtered directory-to-directory full download check succeeded and the local status JSON recorded `verified`. No Google Drive config/token or network remote was used. |
+| Focused final test/lint | `test_rclone_offhost.py`: **10 passed** after the correction; Ruff on the changed Python files passed. Previous complete Windows **376 passed / 43 skipped / 1 XFAIL** and focused backup **24 passed** remain the broader regression results from 2026-10-24; they were not repeated after this narrow command fix. |
+| Hosted CI at pushed base SHA | Two completed runs, [40104661375](https://github.com/yogesh1164/LLM/actions/runs/40104661375) and [40104665005](https://github.com/yogesh1164/LLM/actions/runs/40104665005): 8 jobs passed and 2 image jobs failed in each. Passing jobs include backend, frontend with Playwright, PostgreSQL least-privilege and durable tests, synthetic encrypted restore, dependency audit, Compose and secret scan. New local changes are not pushed and have no hosted CI result. |
+| Image gates | Backend and frontend builds passed; both Anchore/Grype scans failed the HIGH threshold. Logs list 14 distinct HIGH CVE IDs per image, zero CRITICAL, including zlib CVE-2026-85091. Earlier local Scout reported one HIGH per image. Neither scanner finding set is suppressed or accepted. |
+| Debian status | On 2026-10-25 Debian still lists Trixie zlib vulnerable/unfixed; the published amd64 version remains `1:1.3.dfsg+really1.3.1-1+b1`. No supported fix was available for a justified rebuild. |
+
+The successful local-only transfer checks rclone command semantics, not age
+authentication or actual off-host delivery. The complete prior age and PostgreSQL
+drills remain recorded below. No production or development database/service,
+real environment file, Google Drive account or backup was accessed or changed.
+
+## Previous continuation — 2026-10-24, from `c08ceed`
+
+No production or development database, role, volume, service, real environment
+file, Google Drive account, or remote backup was accessed or changed. No OAuth
+authentication or paid Gemini request was made.
+
+| Check | Result |
+|---|---|
+| Branch and remote | `feature/v2-production-hardening`; read-only `git ls-remote` returned the same `c08ceeda4ea93a3113e5daa30ca2199481c48cf9` branch SHA. Hosted Actions status was inaccessible and is unverified. |
+| New mocked rclone adapter + backup/retention regression | **24 passed**. The mock asserted one canonical `.age` artifact with a matching manifest, `copyto --immutable --no-traverse`, exact target, full readback check, no plaintext acceptance, redacted failure status, and source-change detection. No rclone binary/config or network was used. |
+| Full Windows backend + `ops/backup` | **376 passed, 43 skipped, 1 xfailed**, 52.96s, 46 SQLite reflection warnings. PostgreSQL and guarded Linux/image integration cases skipped in this environment. |
+| Ruff / pip check | Full `ruff check backend deploy ops` passed; `pip check` reported no broken requirements. |
+| Frontend | ESLint, `tsc --noEmit`, encoding check (9 files), and Next production build passed. Playwright reported 29 pass / 3 guarded skips; the runner did not exit after listing all cases and was interrupted during teardown. |
+| Dependency audits | `npm audit --audit-level=low`: **0 vulnerabilities**. `pip-audit` unavailable (`No module named pip_audit`); previous final-image audit is recorded in the release evidence. |
+| Containers/Linux | Docker, rclone, age and age-keygen executables are not available in this session. Linux backend, PostgreSQL fixture, image build/smoke, Scout, Compose and container secret-scan checks were not rerun. |
+| First pytest invocation | The first attempted full run used a basetemp parent that did not exist and produced fixture setup errors before collection could complete. It was corrected and the clean full run above passed. |
+
+The three Playwright skips require the separately configured isolated API and
+PostgreSQL fixture. The retained XFAIL remains the synchronous SDK thread
+cancellation limitation. No new failure was observed in the corrected Windows
+run or mocked backup adapter tests.
+
 ## Latest blocker-resolution continuation — 2026-10-24
 
 This section supersedes earlier current-result counts below; older entries remain

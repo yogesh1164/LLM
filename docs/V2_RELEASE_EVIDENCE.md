@@ -1,10 +1,82 @@
-# V2 production-readiness evidence — 2026-10-24
+# V2 production-readiness evidence — 2026-10-25
+
+## Recovery continuation — 2026-10-25 (current)
+
+Recovered the six uncommitted source/test/doc files from the interrupted session
+without resetting them. No production/development database, role, volume, service,
+real environment file, Google Drive account, or real backup was accessed or
+changed. No push, merge, deployment, OAuth exchange or paid provider call occurred.
+Engineering estimate remains **96% complete**; release remains **NOT READY**.
+
+The rclone adapter now uses `copyto` for the one canonical `.age` artifact and
+`check --download --one-way` on the two containing folders, filtered to that exact
+filename. A real rclone v1.75.1 local-only remote with a temporary, credential-free
+config verified the command sequence and full readback. The first local trial
+exposed that `rclone check` rejects file-to-file paths; that implementation error
+was corrected. The successful local trial used synthetic bytes with an age header
+and matching test manifest, so it validates transfer plumbing only. Previous
+authenticated age encryption/recovery evidence remains below. Actual Google Drive
+delivery and independent off-host recovery are **NOT VERIFIED**.
+
+GitHub Actions was inspected read-only for two completed runs of the pushed
+`c08ceeda4ea93a3113e5daa30ca2199481c48cf9` checkpoint:
+[run 40104661375](https://github.com/yogesh1164/LLM/actions/runs/40104661375)
+and [run 40104665005](https://github.com/yogesh1164/LLM/actions/runs/40104665005).
+In each run, backend, frontend/Playwright, least-privilege PostgreSQL, durable
+PostgreSQL, synthetic encrypted backup/restore, dependency audit, Compose and
+secret-scan jobs **passed**. Both backend and frontend image jobs **failed** at
+Anchore/Grype's high-severity gate after successful lint/build steps. These runs
+do not cover the new unpushed rclone adapter.
+
+Grype listed **14 distinct HIGH CVE IDs per image, 0 CRITICAL** in the hosted
+image logs: CVE-2025-69720, CVE-2026-102010, CVE-2026-19499,
+CVE-2026-5435, CVE-2026-54369, CVE-2026-54370, CVE-2026-76642,
+CVE-2026-78408, CVE-2026-78409, CVE-2026-78410, CVE-2026-82560,
+CVE-2026-85091, CVE-2026-9538 and CVE-2026-95619. Multiple packages can map
+to one ID. The earlier immutable-image Docker Scout report below counted one
+HIGH per image; scanner coverage/classification differs. **All hosted findings
+remain open, unsuppressed and unaccepted.** Grype identified `zlib1g`
+`1:1.3.dfsg+really1.3.1-1+b1` in both images. On 2026-10-25 the
+[Debian tracker](https://security-tracker.debian.org/tracker/CVE-2026-85091)
+still marks Trixie vulnerable/unfixed, and the
+[Debian package page](https://packages.debian.org/trixie/amd64/zlib1g)
+still lists that amd64 package. There was no supported zlib package remediation
+to justify a rebuild. No image was rebuilt or rescanned in this continuation.
+
+PostgreSQL role readiness and legacy ownership remain verified only in the
+synthetic/isolated evidence below. Production legacy records stay unassigned.
+The new local checkpoint is source preparation, not approval for credentials,
+roles, backup scheduling/retention, ownership mapping, auth/durable activation,
+image-risk acceptance or production cutover.
 
 **NOT READY.** This is an undeployed release candidate on
 `feature/v2-production-hardening`, continued from `62234f9`.
 Production/development databases, roles, volumes, services and real environment
 files remain unchanged. Nothing was pushed, merged, deployed or publicly exposed;
 all provider calls in the engineering fixtures were offline doubles.
+
+## Previous continuation — 2026-10-24
+
+This session started from clean checkpoint `c08ceeda4ea93a3113e5daa30ca2199481c48cf9`.
+The branch is pushed: a read-only `git ls-remote` confirmed GitHub's branch ref
+matched that commit. No code push, merge, production access, OAuth authentication,
+Drive access, backup upload, database mutation, paid provider call or deployment
+occurred in this continuation.
+
+| Workstream | Current result |
+|---|---|
+| rclone preparation | Added an opt-in adapter restricted to one canonical `.age` file with a matching manifest; mocked copy and full `rclone check --download` tests passed. PowerShell 5.1 invocation and separate download/decrypt/new-database restore steps documented. Actual Drive transfer, readback and recovery remain **NOT VERIFIED**. Retention remains operator-managed; adapter has no remote deletion path. |
+| Windows regression | **376 passed, 43 skipped, 1 XFAIL**, 46 SQLite reflection warnings, 52.96s. Skips include PostgreSQL and guarded Linux/image fixtures. The retained XFAIL is synchronous provider cancellation. |
+| Backup/transfer regression | **24 passed**, covering mocked rclone adapter, local encryption delivery and retention. Ruff passed on the changed Python files and the whole backend/deploy/ops tree. `pip check` passed. |
+| Frontend | ESLint, TypeScript, encoding check, production build passed. Playwright reported **29 passed, 3 guarded skips**; the runner hung during teardown after all listed tests, so it was interrupted before a final process exit. No paid provider calls. npm audit: **0 vulnerabilities**. |
+| PostgreSQL | No isolated server/container is available in this session. Previous isolated PostgreSQL role, authentication, journal, restore and ownership results remain documented below; no database was touched. |
+| Image security | Docker/Scout are unavailable here; no image was rebuilt or rescanned. Prior immutable review-image scans still report one HIGH CVE-2026-85091 per image, zero CRITICAL. Debian tracker on this date still marks Trixie vulnerable/unfixed; published amd64 package remains `1:1.3.dfsg+really1.3.1-1+b1`. No remediation or waiver. |
+| GitHub CI | Remote branch presence verified. Hosted Actions could not be fetched, so workflow status/failures remain **UNVERIFIED**. |
+| Python advisory audit | `pip-audit` is not installed in the available Windows venv; prior final-image audit remains the only recorded Python audit result. |
+
+Hosted Actions and the Drive destination require later verification. This is not
+production readiness. Current local checkpoint and full result details are in
+[V2_CHECKPOINT.md](V2_CHECKPOINT.md) and [V2_VERIFICATION.md](V2_VERIFICATION.md).
 
 ## Latest blocker-resolution continuation — 2026-10-24
 

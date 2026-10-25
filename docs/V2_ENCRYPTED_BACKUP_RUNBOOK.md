@@ -15,6 +15,74 @@ temporary local filesystem, no external provider/account or production schedule 
 configured, and no real production artifact was sent. This drill does not set a
 production RPO/RTO or prove key-custody recovery.
 
+## Prepared rclone transfer (not verified against Google Drive)
+
+`ops/backup/rclone_offhost.py` is an opt-in PowerShell 5.1-compatible wrapper for
+an already authenticated rclone remote. It accepts exactly one canonical backup
+`.age` artifact with its matching local JSON manifest, validates the age ciphertext
+header, format, encryption label, filename and ciphertext SHA-256, uses the
+operator-selected relative folder, and invokes `rclone copyto --immutable
+--no-traverse` for that file only. It then
+runs `rclone check --download --one-way` between the two containing folders,
+filtered to the exact artifact name. This reads both copies and compares content
+instead of relying on provider hash support.
+It never invokes `rclone config`, never loads or prints the rclone config, never
+accepts a key, and never receives the plaintext PostgreSQL dump. A local JSON
+status report records the object name, local ciphertext SHA-256 and transfer
+state; command output and diagnostics are suppressed. A failed copy or check exits
+nonzero and produces a failed report without a success attestation.
+
+After authentication is repaired and separately approved, the operator may use:
+
+```powershell
+python ops\backup\rclone_offhost.py C:\EncryptedRecovery\agentflow-20261025T000000Z-0123456789abcdef0123456789abcdef.age `
+  --remote agentflow-gdrive `
+  --folder AgentFlow/production `
+  --report C:\EncryptedRecovery\rclone-transfer-status.json
+```
+
+The example is a procedure only; substitute the actual canonical archive name
+and keep its matching `.json` sidecar beside it. `--folder` must be a relative
+path selected by the operator. The remote should be restricted to the approved
+backup folder. Use a unique artifact name and retain immutable ciphertext copies.
+The transfer tool has no remote deletion command: retention is operator-managed
+at the Drive folder and policy level. Existing local retention planning remains
+dry-run by default and requires explicit confirmation before local deletion. A
+PowerShell 5.1 dry run can set the local retention window without deleting files:
+
+```powershell
+python ops\backup\retention.py --destination C:\EncryptedRecovery `
+  --daily-days 30 --monthly-count 12
+```
+
+The operator must approve the remote retention/immutability policy separately.
+A separate download, SHA-256 comparison, age decryption, `pg_restore --list`, and
+restore into a new empty `agentflow_restore_*` database are required for recovery
+acceptance; see the restore procedure below. Neither actual Google Drive delivery
+nor remote retrieval/decryption/restore has been verified. Do not set
+`off_host_verified: true` based on this adapter's local mocked tests.
+
+For an independently approved recovery check, download an exact object into a
+new protected local path and compare it with the retained local transfer status:
+
+```powershell
+$object = 'agentflow-gdrive:AgentFlow/production/agentflow-20261025T000000Z-0123456789abcdef0123456789abcdef.age'
+$download = 'C:\EncryptedRecovery\agentflow-20261025T000000Z-0123456789abcdef0123456789abcdef.age'
+rclone copyto --immutable $object $download
+if ($LASTEXITCODE -ne 0) { throw 'Encrypted download failed' }
+$expected = (Get-Content -LiteralPath 'C:\ProtectedBackupMetadata\rclone-transfer-status.json' -Raw | ConvertFrom-Json).sha256
+$actual = (Get-FileHash -LiteralPath $download -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($actual -ne $expected) { throw 'Downloaded ciphertext checksum mismatch' }
+```
+
+Keep the status metadata separately protected; it is informational and cannot
+authenticate decryption. Continue with age authenticated decryption, archive
+listing and restore into a **new empty** `agentflow_restore_*` database using the
+procedure below. Do not run these recovery commands against the existing
+production database. The local-only rclone trial on 2026-10-25 verified command
+syntax and readback with a synthetic header fixture and temporary local config;
+it did not test cryptographic validity, Google Drive or off-host recovery.
+
 ## What the tooling does
 
 [`ops/backup/backup.py`](../ops/backup/backup.py) explicitly checks the selected

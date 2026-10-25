@@ -1,6 +1,59 @@
 # V2 development checkpoint
 
-## Current production-readiness continuation: 2026-10-24
+## Recovered continuation — 2026-10-25 (current)
+
+Recovered branch `feature/v2-production-hardening` at `c08ceed` with four
+uncommitted docs and two backup Python files, all preserved. The prior Windows
+suite (376 pass / 43 skip / 1 XFAIL), focused backup suite (24 pass), frontend
+build/lint/type checks and npm audit are preserved evidence. A real rclone
+local-only trial exposed and corrected a file-to-file check error; the corrected
+adapter passed **10 focused tests**, Ruff and a local full-download integrity
+check. Google Drive delivery remains **NOT VERIFIED**.
+
+Two hosted Actions runs at the pushed `c08ceed` checkpoint were inspected. Each
+had eight passing jobs, including PostgreSQL, backup, frontend and dependency
+checks, and both backend/frontend image scans failed at the HIGH gate. Anchore/
+Grype reported 14 distinct HIGH CVE IDs per image, zero CRITICAL; local Scout
+previously reported one HIGH per image. All remain unresolved. The current local
+changes are not pushed and have no hosted CI result. Production role rollout,
+legacy assignment, off-host backup and feature activation remain unapproved.
+**Release remains NOT READY; engineering estimate 96%.**
+
+The detailed [release evidence](V2_RELEASE_EVIDENCE.md),
+[verification results](V2_VERIFICATION.md) and
+[backup runbook](V2_ENCRYPTED_BACKUP_RUNBOOK.md) describe the current state and
+recovery procedure. The local checkpoint includes only reviewed source, tests
+and documentation.
+
+## Previous production-readiness continuation: 2026-10-24
+
+### Continuation from local checkpoint `c08ceed`
+
+The branch `feature/v2-production-hardening` was confirmed present on GitHub at
+the same `c08ceeda4ea93a3113e5daa30ca2199481c48cf9` SHA. This session prepared a
+mock-tested, opt-in rclone adapter for already-encrypted `.age` files and added
+PowerShell-compatible instructions. No Drive authorization, account access,
+upload, remote restore or remote retention operation was attempted. Actual Drive
+delivery remains **NOT VERIFIED**.
+
+The corrected Windows regression run passed **376 tests**, skipped **43** and
+retained **1 XFAIL**. The new backup/retention/rclone-focused run passed **24**.
+Ruff, `pip check`, frontend lint, TypeScript, encoding, production build and npm
+audit (zero vulnerabilities) passed. Playwright listed 29 pass and 3 guarded
+skips but hung during teardown before final exit. Hosted Actions status,
+isolated PostgreSQL/Linux checks, container rebuild/scan and local `pip-audit`
+remain unverified in this machine environment.
+
+Debian's current tracker still lists Trixie as vulnerable/unfixed for
+CVE-2026-85091; both previously scanned candidate images retain one HIGH and
+zero CRITICAL. No fix or risk waiver was introduced. Existing isolated evidence
+for role separation and ownership mapping remains unchanged. Legacy production
+records stay unassigned and quarantined. Runtime role rollout, Drive/key custody,
+production backup/restore, ownership approval, authentication/durable activation
+and deployment remain pending operator approval. **Release remains NOT READY.**
+
+Detailed session evidence and exact limitations: [release evidence](V2_RELEASE_EVIDENCE.md)
+and [verification](V2_VERIFICATION.md).
 
 ### Latest interrupted-work completion status
 

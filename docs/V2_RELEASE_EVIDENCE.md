@@ -1,5 +1,48 @@
 # V2 production-readiness evidence — 2026-10-25
 
+## Final release-blocker review — 2026-11-01
+
+Reviewed candidate: `0c1c6924704aa7a2fefa1755db2db590ff4991fe` on
+`feature/v2-production-hardening` (same as `origin/feature/v2-production-hardening`
+at inspection). Worktree was clean before this review. Current release status:
+**NOT READY**. Operator-facing dispositions and required approvals are in
+[V2_FINAL_OPERATOR_RISK_REVIEW.md](V2_FINAL_OPERATOR_RISK_REVIEW.md).
+
+| Check | Result on this candidate |
+|---|---|
+| Backend regression | **347 passed, 36 skipped, 1 XFAIL**, 72.32 s; 46 SQLAlchemy reflection warnings. PostgreSQL/Docker-guarded coverage did not run in this host session. |
+| Backend static/dependencies | Ruff passed for `backend deploy ops`; `pip check` passed. |
+| Frontend static/build | ESLint passed; TypeScript `tsc --noEmit` passed; encoding check passed for 9 files; Next.js 16.4.2 production build passed. |
+| Frontend integration | Playwright enumerated all 32 cases but did not return a summary or exit after the cases completed. The process was interrupted. **Current-run result is incomplete and not counted as a pass.** |
+| Docker/PostgreSQL/image security | Docker CLI/daemon unavailable. No isolated PostgreSQL 16 rerun, candidate image build/smoke, Compose validation, Grype scan, same-digest scanner comparison, backup/restore container rehearsal or deployment rollback rehearsal was possible. |
+| GitHub hosted CI | **Pending/unconfirmed for this exact commit.** GitHub CLI could not read its user configuration (access denied); no claim is made that current hosted CI passed. |
+| Backup and Drive | Existing local synthetic age/restore and local-rclone adapter evidence remains valid for its documented scope. No OAuth repair, Google Drive transfer/readback or independent off-host restore was performed. |
+| Production state | No database, role, credential, service, volume, real environment file, legacy record, or production backup was accessed or changed. No production launch or provider request occurred. |
+
+The most recent hosted Grype evidence remains the 2026-10-25 scan of different
+source commit `0aab361564f35979e92d4472998fb24687167e71` and different ephemeral
+image digests. It reported 14 HIGH CVEs per image, zero CRITICAL, using Grype
+0.97.1 and DB v6.1.10. Those counts are not current-candidate scan results.
+No supported package changes were applied. On 2026-11-01 Debian's tracker still
+marked Trixie's zlib package vulnerable and showed a fix only in Sid; all
+findings remain unsuppressed and unaccepted. See the precise inventory and
+[operator risk review](V2_FINAL_OPERATOR_RISK_REVIEW.md).
+
+Google Drive is pending private OAuth repair, an operator-selected `drive.file`
+compatible folder/scope, explicit synthetic transfer authorization, and a
+successful download/checksum/decryption/isolated restore. Production database
+role changes remain unapproved; the last documented read-only catalog showed
+the legacy application role overprivileged at revision 0005. Migrations 0006
+and 0007, account activation, administrator provisioning and durable execution
+remain production-inactive. Legacy data remains unassigned and quarantined.
+
+No GitHub hosted result is verified for this exact commit. This review changes
+only the two release-evidence documents; the changes are prepared for a local
+documentation checkpoint. Release remains **NOT READY** pending security
+disposition, real off-host recovery acceptance, approved least-privilege role
+rollout, controlled migration/auth activation, successful exact-candidate CI and
+production acceptance.
+
 ## Five-blocker engineering continuation — 2026-10-25
 
 Baseline `0aab361564f35979e92d4472998fb24687167e71` was clean on

@@ -1,3 +1,29 @@
+## Latest hosted and isolated candidate scans — 2026-11-01
+
+The newest hosted runs on source `8decc5082a80fb4af4919d7a3b7d0b10e628ace5` were push [41316291820](https://github.com/yogesh1164/LLM/actions/runs/41316291820) and PR [41316295540](https://github.com/yogesh1164/LLM/actions/runs/41316295540). Grype was 0.97.1. Both used vulnerability DB `vulnerability-db_v6.1.10_2026-11-01T00:24:34Z_1793514012` with archive SHA-256 `d0e1af9e6491440e1a671d0a0aafc32c5c7cb5cda787dcec3482799ef298f31c`.
+
+| Event | Image | Hosted manifest digest | Distinct HIGH | Distinct CRITICAL |
+|---|---|---|---:|---:|
+| Push | Backend | `sha256:6fb7cc12c378b59b5394dd86facc075b1afd3414a13d842571b7297bcffda5f2` | 15 | 1 |
+| PR | Backend | `sha256:45f56184740551dadbce1e825347d322a7599ddfb6573d984a49feb9b9adcab1` | 15 | 1 |
+| Push | Frontend | `sha256:c313a11c3891efa3c65cde53d453bdcce1aacb5818edc0892f244ae290621205` | 15 | 0 |
+| PR | Frontend | `sha256:1bec8bdd8e0c0bc1ef875584352cb898c16bb0c629f058f9a7a1fd7e72c1c48a` | 15 | 0 |
+
+The hosted backend CRITICAL is `CVE-2026-115557` on Python 3.12.15; Grype reports 3.12.16 fixed. This motivated updating only the supported Python patch base. The hosted HIGH IDs are the 15 shared Debian IDs listed above in the prior scan record; no pyasn1 HIGHs appeared after the 0.6.5 pin. The dependency job’s Python `pip-audit` step passed; the subsequent npm audit step failed on the minimatch advisory documented in `V2_RELEASE_EVIDENCE.md`.
+
+### Rebuilt local candidate manifests
+
+Local builds used the same Grype 0.97.1 executable and the checksum-verified hosted DB archive above. Grype scanned each image by its exact OCI manifest digest:
+
+| Candidate | Base | Manifest digest | Grype findings (unique CVE IDs) |
+|---|---|---|---|
+| Backend | Python 3.12.16, official slim Trixie digest `sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159` | `sha256:527c784ec206261c3ab3fc6249c298edbb2013891b177ff7aff0ab3eeae7f76f` | 27 HIGH, 2 CRITICAL |
+| Frontend | Node 22.23.4, official slim Trixie digest `sha256:2117f713a417f3aff682148ee11aa1bb2249d198a604732d18a0b4c4829c4e33` | `sha256:327a9782549d0ef8bb6e8a1287560440f9bd8e441067b61a2549bcb4f6661a83` | 16 HIGH, 0 CRITICAL |
+
+Backend candidate also reports Python 3.12.16, pip 26.2.2 and pyasn1 0.6.5; the prior Python critical and pyasn1 GHSAs are absent. The 15 shared Debian HIGH CVE IDs remain: CVE-2025-69720, CVE-2026-102010, CVE-2026-19499, CVE-2026-5435, CVE-2026-54369, CVE-2026-54370, CVE-2026-76642, CVE-2026-78408, CVE-2026-78409, CVE-2026-78410, CVE-2026-82560, CVE-2026-84243, CVE-2026-85091, CVE-2026-9538 and CVE-2026-95619. Grype reports no fixed Trixie package versions for these matches (or marks them `won't fix`); no package downgrade or suppression was used.
+
+The local backend adds 11 HIGH and 2 CRITICAL generic CPE matches against the `openssl` executable version 3.5.7: CVE-2026-18798, CVE-2026-63076, CVE-2026-14457, CVE-2026-63072, CVE-2026-84782, CVE-2026-14456, CVE-2026-54873, CVE-2026-54874, CVE-2026-84784, CVE-2026-63075, CVE-2026-72897 (HIGH), and CVE-2026-63073 and CVE-2026-75803 (CRITICAL). The frontend does not contain that executable. Both local reports add a HIGH generic CPE match against gzip 1.13 (`CVE-2026-41992`). The actual installed Debian revisions are `openssl 3.5.7-1~deb13u3`, `libssl3t64 3.5.7-1~deb13u3`, and `gzip 1.13-1+deb13u1`. Debian’s security tracker marks the OpenSSL advisories fixed in Trixie at revision `3.5.7-1~deb13u3` (DSA-6465-1 and DSA-6531-1), and CVE-2026-41992 fixed in Trixie at gzip `1.13-1+deb13u1`. See [Debian OpenSSL tracker](https://security-tracker.debian.org/tracker/source-package/openssl), [DSA-6465-1](https://security-tracker.debian.org/tracker/DSA-6465-1), [DSA-6531-1](https://security-tracker.debian.org/tracker/DSA-6531-1), and [Debian CVE-2026-41992](https://security-tracker.debian.org/tracker/CVE-2026-41992). The runtime-stage system pip was also upgraded to 26.2.2 after the first scan found the base image’s separate pip 25.0.1; the final backend report has no pip or pyasn1 matches. These vendor status records conflict with Grype’s generic CPE matches; the raw scanner findings remain unsuppressed and the image gate is still failing pending an authorized scanner finding reconciliation. This is not a risk acceptance or a claim that CI passed.
+
 # Hosted Grype HIGH inventory — 2026-10-25 review
 
 ## Latest hosted scan — 2026-11-01, source `c7125f07`

@@ -1,5 +1,59 @@
 # Hosted Grype HIGH inventory — 2026-10-25 review
 
+## Latest hosted scan — 2026-11-01, source `c7125f07`
+
+Push run [41314507014](https://github.com/yogesh1164/LLM/actions/runs/41314507014)
+and pull-request run
+[41314511005](https://github.com/yogesh1164/LLM/actions/runs/41314511005) built
+and scanned the exact same source commit. Both image builds and Dockerfile lint
+steps succeeded; only Grype's configured HIGH cutoff failed. Grype was 0.97.1
+with vulnerability DB v6.1.10 built `2026-11-01T06:20:12Z`.
+
+| Event | Image | Grype image-read digest | Result |
+|---|---|---|---|
+| Push | Backend | `sha256:eca9f251560b3060cb98be940872bc850bb5803edf008a80c499c29fc718bf64` | 15 distinct HIGH CVEs plus 4 HIGH GHSAs; 0 CRITICAL |
+| Push | Frontend | `sha256:869d78d271d77ecbe762148ee11aa1bb2249d198a604732d18a0b4c4829c4e33` | 15 distinct HIGH CVEs; 0 CRITICAL |
+| Pull request | Backend | `sha256:9c78986c337b76a9628a9e71cbe7dcdf27201dc5b5b746994fc41b6c4484d4d3` | Same HIGH IDs; 0 CRITICAL |
+| Pull request | Frontend | `sha256:ce50e146d4e6501daf88254b1774a9e641bd2778810f37b7d3277e85c592d5a1` | Same HIGH IDs; 0 CRITICAL |
+
+The 15 HIGH CVE IDs in **both** images are CVE-2025-69720,
+CVE-2026-102010, CVE-2026-19499, CVE-2026-5435, CVE-2026-54369,
+CVE-2026-54370, CVE-2026-76642, CVE-2026-78408, CVE-2026-78409,
+CVE-2026-78410, CVE-2026-82560, CVE-2026-84243, CVE-2026-85091,
+CVE-2026-9538 and CVE-2026-95619. The backend additionally contains
+`pyasn1 0.6.4`, matched to four HIGH GHSAs: GHSA-9m75-vc3g-4x39,
+GHSA-fm9c-5rcf-2q5p, GHSA-2qm8-x737-gmw5 and GHSA-mm57-4v3p-rchx.
+Grype lists `0.6.5` as the fix for all four. The reviewed
+[pyasn1 advisory](https://github.com/advisories/GHSA-2qm8-x737-gmw5) and
+[PyPI 0.6.5 release](https://pypi.org/project/pyasn1/0.6.5/) confirm the
+patched version. The repository constraint is now `pyasn1==0.6.5`; an isolated
+clean dependency environment reports no known Python advisories after that
+change. The Dockerfile builder now explicitly
+upgrades its bundled pip 25.0.1 to 26.2.2, which is above all pip fix versions
+reported by this scan. These source changes have **not** been rebuilt or
+rescanned in a container because the local Docker daemon is unavailable.
+
+The Debian HIGH matches use these installed versions: `perl-base`
+`5.40.1-6+deb13u1`; `zlib1g` `1:1.3.dfsg+really1.3.1-1+b1`; ncurses
+`6.5+20250216-2`; gcc runtime `14.2.0-19`; glibc
+`2.41-12+deb13u4`; acl `2.3.2-2+b1`; and util-linux
+`2.41.5-0+deb13u1`. The CVE/package mapping is the table in the historical
+inventory below, plus new `CVE-2026-84243` on `libc-bin` and `libc6` at glibc
+`2.41-12+deb13u4`. Grype lists `(won't fix)` or no fixed version for these
+Debian matches. Current Debian trackers mark the relevant Trixie packages
+vulnerable; fixes shown for some source packages are in Forky/Sid, not supported
+Trixie updates. For `CVE-2026-84243`, Debian marks glibc vulnerable in Trixie,
+Forky and Sid, with no fixed version ([Debian tracker](https://security-tracker.debian.org/tracker/CVE-2026-84243)).
+The package fix for pyasn1 is the only
+supported direct remediation identified in these scans. No Debian package was
+substituted and no advisory was suppressed.
+
+The same backend scan also reports pip 25.0.1 medium-severity GHSAs with fixes
+25.3, 26.0, 26.1, 26.1.2 or 26.2.0. The builder upgrade to pip 26.2.2 is above
+those versions; the image result still needs a rebuild to verify it. The latest
+Grype logs are the authoritative source for package rows and digests; this
+inventory does not claim the source changes cleared any image gate.
+
 This is a transcription of the **2026-10-25 hosted CI scan of source commit
 `0aab361564f35979e92d4472998fb24687167e71`**, run
 [40164676589](https://github.com/yogesh1164/LLM/actions/runs/40164676589).

@@ -1,5 +1,53 @@
 # V2 production-readiness evidence — 2026-10-25
 
+## Focused GitHub CI failure follow-up — 2026-11-01
+
+Inspected push run [41314507014](https://github.com/yogesh1164/LLM/actions/runs/41314507014)
+and PR run [41314511005](https://github.com/yogesh1164/LLM/actions/runs/41314511005),
+both for source commit `c7125f07e2af2d58923450850d7f860150a7a680`. The failed
+jobs are `dependency-audit`, `images (backend)` and `images (frontend)` in both
+runs. Image Dockerfile lint/build steps succeeded; Grype failed at the configured
+HIGH cutoff. Exact scan digests, DB version, CVEs and package versions are in
+[V2_GRYPE_CVE_INVENTORY.md](V2_GRYPE_CVE_INVENTORY.md).
+
+The hosted Python audit identified `pyasn1 0.6.4` with four HIGH advisories,
+all fixed in 0.6.5. `backend/constraints.txt` now pins 0.6.5. The hosted run
+stopped at that failing command, so its npm audit step was skipped. Local npm
+audit found 16 moderate instances of GHSA-g3hv-75wg-m249 through minimatch
+3.1.5 and 10.2.6 in the ESLint toolchain. The only advisory-wide fixed version
+reported is minimatch 11.0.1; current consumers declare incompatible 3.x/10.x
+ranges. `npm audit fix --dry-run` did not produce a nonbreaking fix and proposed
+a breaking ESLint config downgrade under `--force`; no override, downgrade or
+audit threshold change was applied ([minimatch advisory](https://github.com/advisories/GHSA-g3hv-75wg-m249)).
+This is an additional unresolved dependency-audit blocker that hosted CI did not reach.
+
+The backend image scan also reports pip 25.0.1 with several MEDIUM GHSAs and
+fixed versions up to 26.2.0. `backend/Dockerfile` now upgrades the builder
+virtual environment pip to 26.2.2. This source-level change and the pyasn1
+upgrade have not been rebuilt/scanned locally: the Docker Desktop daemon is
+unavailable. Debian base-package HIGH findings remain unresolved with no
+supported Trixie fixes in the current inventory. The scanner gate was not
+weakened or suppressed.
+
+Verification after the dependency changes: backend suite **347 passed, 36
+skipped, 1 XFAIL**; backup suite **31 passed, 6 skipped**; Ruff and `pip check`
+passed; a fresh isolated Python 3.12 environment matching CI dependencies with
+the updated pyasn1 and pip 26.2.2 reported **no known Python vulnerabilities**.
+The existing GitHub frontend job passed lint, TypeScript, encoding, production
+build and Playwright on source `c7125f0`; local `npm audit --audit-level=low`
+failed on the unresolved minimatch advisory. `npm audit fix --dry-run` and
+current Grype scan results were reviewed; no frontend dependency change was
+made. Local candidate image builds and scans could not run because Docker is
+unavailable.
+
+No push, merge, deployment, production change or paid provider call occurred.
+Gitleaks 8.24.3 scanned the complete Git history (24 commits) and the four
+modified source/evidence files staged in a temporary scan directory; both scans
+reported no leaks. The verified local checkpoint is recorded in Git.
+
+The following release review predates inspection of the latest hosted CI logs;
+the focused follow-up above supersedes its CI and image findings.
+
 ## Final release-blocker review — 2026-11-01
 
 Reviewed candidate: `0c1c6924704aa7a2fefa1755db2db590ff4991fe` on

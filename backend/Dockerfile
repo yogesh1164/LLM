@@ -2,7 +2,8 @@
 FROM python:3.12-slim-trixie@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704 AS builder
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_NO_CACHE_DIR=1
 WORKDIR /build
-RUN python -m venv /opt/venv
+RUN python -m venv /opt/venv \
+    && /opt/venv/bin/python -m pip install --upgrade "pip==26.2.2"
 COPY pyproject.toml constraints.txt ./
 COPY app ./app
 # Preserve the working Gemini SDK. Include the existing optional OpenAI provider.

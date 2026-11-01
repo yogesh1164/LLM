@@ -2,9 +2,46 @@
 
 Review date: 2026-11-01
 Branch: `feature/v2-production-hardening`
-Local source: `521e1b520bfbaf723d1875aaa0a754b18bd9340f`
-Hosted source (latest): `8decc5082a80fb4af4919d7a3b7d0b10e628ace5`
+Local source: `f5251a44ed290778848d0b94df9b161d3f901d6e`
+Hosted source (latest push and PR): `f5251a44ed290778848d0b94df9b161d3f901d6e`
 Decision: **NOT READY**
+
+## Latest hosted CI verification
+
+Push run [41321951030](https://github.com/yogesh1164/LLM/actions/runs/41321951030)
+and PR run [41321955135](https://github.com/yogesh1164/LLM/actions/runs/41321955135)
+ran on the current source. All jobs passed except `dependency-audit`,
+`images (backend)`, and `images (frontend)`. The dependency job reports 16
+moderate minimatch instances. Both image jobs ran Grype 0.97.1 with the same
+DB archive `vulnerability-db_v6.1.10_2026-11-01T00:24:34Z_1793514012`,
+SHA-256 `d0e1af9e6491440e1a671d0a0aafc32c5c7cb5cda787dcec3482799ef298f31c`.
+
+| Event | Image | Hosted manifest digest | Distinct HIGH | Distinct CRITICAL |
+|---|---|---|---:|---:|
+| Push | Backend | `sha256:47ad336d3d19cbb830ff38f84c99245565939a689e8e0e5da6c5966958c1c180` | 15 | 0 |
+| Push | Frontend | `sha256:97dbdadfac48f4c2c0fe8712ac009d250d73849b8ca304eb9adb8692639fb899` | 15 | 0 |
+| PR | Backend | `sha256:7f972212d8ca07df0c8fab9ba5366fb244d795b314700f840430f97e0d2008bf` | 15 | 0 |
+| PR | Frontend | `sha256:7905a8ade1a7b639957c24a3777ff9cc8295bfca2bc4690e5655c5fea7a7ea92` | 15 | 0 |
+
+Each hosted image gate reports the same 15 shared Debian CVEs listed below.
+These hosted image digests are ephemeral and differ from the local candidate
+digests in the next section. Do not combine their finding counts. The hosted
+reports do not contain the local candidate's generic OpenSSL/gzip CPE matches;
+same-digest comparison against those hosted images is unavailable because the
+images were not published. The HIGH gates still fail for both images.
+
+Since the prior review, npm registry checks show `minimatch@11.0.3` is the
+latest overall version, but `10.2.6` remains the last 10.x release. The latest
+`@typescript-eslint/typescript-estree@8.72.1` still declares `minimatch
+^10.2.2`; no compatible fixed package was available. Disposable `apt-get
+update` checks against both pinned Python and Node Trixie base digests show no
+newer candidate for the reported installed Trixie package set. No image rebuild
+was justified because there was no supported package change to apply.
+
+Frontend `npm ci` completed successfully in an isolated archive of this commit.
+`npm audit` returned 16 moderate findings and exit 1; ESLint, TypeScript,
+production build, and Playwright passed (29 passed, 3 skipped). No source or
+lockfile dependency change was made.
 
 ## Candidate scan evidence
 

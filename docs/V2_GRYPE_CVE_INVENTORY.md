@@ -162,3 +162,17 @@ expiring risk decision; engineering has not accepted one. Existing non-root,
 capability-drop, private-ingress and no-new-privileges controls reduce exposure
 but do not patch the binaries. The zlib-specific source review and unresolved
 Debian classification are in [the zlib assessment](V2_ZLIB_RISK_ASSESSMENT.md).
+
+## Current hosted baseline - 2026-11-02
+
+The exact-source hosted PR 41464303432 and push 41464293507 used Grype 0.97.1 and DB v6.1.10 (archive label `vulnerability-db_v6.1.10_2026-11-02T00:22:47Z_1793600812`; Grype reports installed DB built `2026-11-02T06:26:52Z`), archive SHA-256 `68063965a3a023acd330a65a0740976c81f8e13902824134b447deee97a0d838`. Backend digest: `sha256:99b88399e56bf820645a4b4ba51eea976027ca53b0133e46a0de2f6184ab8679`; frontend digest: `sha256:331fed84e05b1170603d4d7ac398d9555d0fa3f0ec155a53daddfba2a1b66a77`. Each scan found 18 unique HIGH and zero CRITICAL CVEs.
+
+Three SQLite HIGH findings are new in both images, in addition to the 15 previous shared Debian IDs:
+
+| CVE | Package/version | Debian Trixie status | Trigger / reachability |
+|---|---|---|---|
+| CVE-2026-119373 | `libsqlite3-0 3.46.1-7+deb13u2` | Vulnerable; no Debian fix listed. Upstream fix 3.54.0. | Crafted negative rowids in FTS5 `detail=none` plus prefix MATCH. Production app uses PostgreSQL, no SQLite file input. |
+| CVE-2026-119374 | `libsqlite3-0 3.46.1-7+deb13u2` | Vulnerable; no Debian fix listed. Upstream fix 3.54.0. | Crafted corrupt FTS5 index plus secure-delete. No app SQLite file input identified. |
+| CVE-2026-119379 | `libsqlite3-0 3.46.1-7+deb13u2` | Vulnerable; no Debian fix listed. Upstream fix 3.54.0. | Crafted changeset through SQLite session extension. No app changeset ingestion identified. |
+
+Debian vendor records: [119373](https://security-tracker.debian.org/tracker/CVE-2026-119373), [119374](https://security-tracker.debian.org/tracker/CVE-2026-119374), [119379](https://security-tracker.debian.org/tracker/CVE-2026-119379). Limited app reachability is not remediation or risk acceptance. Full logs and parsed CVE/package JSON are in `security/evidence/2026-11-02`; action output was text only, with no native JSON/SBOM. See the current CI blocker review for complete status.

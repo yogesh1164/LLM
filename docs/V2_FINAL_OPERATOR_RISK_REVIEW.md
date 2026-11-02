@@ -99,3 +99,11 @@ was changed. No paid Gemini request was made.
    made.
 5. Pass hosted CI and production acceptance on the exact reviewed release
    candidate. No deployment authorization is implied by this review.
+
+## Current security decision - 2026-11-02
+
+**NOT READY.** Exact-source hosted runs on `5049730e3fd5ae3dec9286844058e43b29805322` fail npm audit and both image gates. Per-image results are 18 HIGH / 0 CRITICAL on immutable digests, Grype 0.97.1, DB v6.1.10 built 2026-11-02. npm audit reports 16 moderate instances of a single GHSA in development-only lint tooling. See `V2_CI_SECURITY_BLOCKER_REVIEW.md` and `security/evidence/2026-11-02` for exact sources.
+
+Three newly surfaced SQLite CVEs affect a Debian runtime library in both images. Production app configuration uses PostgreSQL; no SQLite file upload or changeset ingestion path was identified. This is a reachability limitation, not a fix or acceptance. Debian currently lists Trixie vulnerable and no fixed version. Remaining Debian findings and the npm advisory block release.
+
+Internal development may continue with existing controls. Restricted private beta requires a named security owner to review the exact image digests, confirm exposure limits, define monitoring and a short expiration, and sign a finding-specific decision. Current evidence does not authorize beta. Do not recommend public multi-user production until patches/advisory corrections are verified and all blocking security jobs pass on the exact images. Re-review by 2026-11-09 or sooner if upstream changes. No production action was taken.

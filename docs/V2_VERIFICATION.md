@@ -417,3 +417,11 @@ is intentionally create-once; rerunning requires a fresh name, not deleting it.
 Verdict: **V2 is not production/multi-user ready.** Safe foundations are tested;
 account activation, ownership migration, durable jobs and unresolved image
 vulnerabilities remain gates. Existing V1 private services remain running.
+
+## Current CI and local security verification - 2026-11-02
+
+The review began at clean branch `feature/v2-production-hardening`, HEAD and origin `5049730e3fd5ae3dec9286844058e43b29805322`. Hosted push 41464293507 and PR 41464303432 passed all non-security jobs and failed npm audit plus both image HIGH-threshold jobs. Current exact hosted results are backend 18 HIGH / 0 CRITICAL, frontend 18 HIGH / 0 CRITICAL, npm 16 moderate instances / 0 high / 0 critical. Image counts are tied to the digests and DB recorded in the current blocker review.
+
+Local frontend ESLint, `tsc --noEmit`, and encoding check passed. Candidate backend and frontend Docker builds passed; frontend first failed with npm `ECONNRESET` on default build networking, then passed on host networking. Playwright reported 29 passed, 3 skipped, normal exit in 33.9 seconds with `NEXT_DIST_DIR=.next-playwright-security-20261102`; the previous shutdown hang did not reproduce. Hosted backend, durable Postgres, least-privilege Postgres, encrypted-backup, frontend, secret-scan and Compose jobs passed. No database/volume or running private service was touched.
+
+Evidence lives in `security/evidence/2026-11-02`. The CI action emits Grype text, not native JSON/SBOM/full package inventory; the parsed finding JSON is retained with raw logs. Local Grype 0.121.0 database refresh attempts stalled and were canceled before database status or scan output was available, so a local updated scan is not claimed.

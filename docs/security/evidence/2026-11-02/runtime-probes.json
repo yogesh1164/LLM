@@ -1,0 +1,46 @@
+{
+    "sourceCommit":  "5049730e3fd5ae3dec9286844058e43b29805322",
+    "note":  "Isolated images built from repository source; this records runtime properties and is not a CVE scan.",
+    "images":  [
+                   {
+                       "tag":  "agentflow-backend:security-baseline-5049730",
+                       "imageConfigId":  "sha256:5c862c078705a2a6bebc963a486ad7752b472ece7d102ceb1a304cd9a204dc62",
+                       "user":  "10001:10001",
+                       "healthcheck":  "python GET http://127.0.0.1:8000/api/ready",
+                       "healthInterval":  "30s",
+                       "healthTimeout":  "5s",
+                       "healthExecution":  "not run because endpoint requires application database",
+                       "foundSetuidSetgidRegularFiles":  0,
+                       "binaryPaths":  [
+                                           "/usr/bin/infocmp",
+                                           "/usr/bin/mount",
+                                           "/usr/bin/nsenter",
+                                           "/usr/bin/perl",
+                                           "/usr/bin/openssl",
+                                           "/usr/bin/gzip"
+                                       ],
+                       "perlPodTextModulePresent":  false,
+                       "perlArchiveTarModulePresent":  false
+                   },
+                   {
+                       "tag":  "agentflow-frontend:security-baseline-5049730",
+                       "imageConfigId":  "sha256:71a414905d68826552b29813b6fff0b12c4bc865cdd4257f4a11dc781914d989",
+                       "user":  "node (uid 1000)",
+                       "healthcheck":  "node fetch http://127.0.0.1:3000/",
+                       "healthStatus":  "healthy",
+                       "healthInterval":  "30s",
+                       "healthTimeout":  "5s",
+                       "healthExecution":  "passed isolated network-none run; no ports or volumes",
+                       "foundSetuidSetgidRegularFiles":  0,
+                       "binaryPaths":  [
+                                           "/usr/bin/infocmp",
+                                           "/usr/bin/mount",
+                                           "/usr/bin/nsenter",
+                                           "/usr/bin/perl",
+                                           "/usr/bin/gzip"
+                                       ],
+                       "perlPodTextModulePresent":  false,
+                       "perlArchiveTarModulePresent":  false
+                   }
+               ]
+}

@@ -1,9 +1,11 @@
 node_modules/
 .next/
+frontend/.next-*/
 out/
 coverage/
 frontend/test-results/
 frontend/playwright-report/
+frontend/.ui-preview-*.png
 dist/
 build/
 .venv/

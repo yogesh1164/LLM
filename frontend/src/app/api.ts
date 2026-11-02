@@ -1,4 +1,8 @@
-const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+// Local development uses the same-origin /api proxy. Production retains the
+// configured API URL (or the existing localhost fallback).
+const apiBase = process.env.NODE_ENV === "development"
+  ? ""
+  : process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 let accountMode = false;
 let accountId: string | null = null;
 let csrfToken: string | null = null;

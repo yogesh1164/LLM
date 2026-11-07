@@ -25,6 +25,7 @@ from tests.test_account_api import signed_in
 from tests.test_account_api import (
     test_two_users_durable_workflow_and_all_resource_boundaries as exercise_two_users,
 )
+from tests.test_account_api import test_session_endpoints_and_csrf as exercise_auth_csrf
 from tests.test_durable_postgres import (
     content_snapshot,
     legacy_history,
@@ -218,6 +219,7 @@ def test_0005_backup_failed_0007_restore_and_quarantine(postgres, monkeypatch, t
 @pytest.mark.parametrize("postgres", ["head"], indirect=True)
 def test_postgres_accounts_durable_api(postgres, account_mode, monkeypatch):
     exercise_two_users(account_mode, monkeypatch)
+    exercise_auth_csrf(account_mode)
 
 
 @pytest.mark.parametrize("postgres", ["0005_custom_workflows"], indirect=True)

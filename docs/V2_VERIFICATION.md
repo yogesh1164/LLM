@@ -438,7 +438,7 @@ Docker volume, OAuth credential or remote was contacted.
 
 `pytest -q -p no:cacheprovider ops/backup`: **46 passed, 0 failed, 0 skipped**.
 Coverage included disabled and invalid configuration, a complete synthetic
-PostgreSQL-dump/age-encrypt/local-verify/publish scheduler path, ciphertext header
+synthetic dump fixture/age-encrypt/local-verify/publish scheduler path, ciphertext header
 and plaintext-marker exclusion before the upload boundary, mocked remote
 upload/readback failures, checksum/source-change failure, stale freshness,
 sanitized failure logging/alert outcomes, and preservation of the prior verified

@@ -379,8 +379,8 @@ Using isolated Python 3.12.10 and pinned backup test requirements
 (cryptography 50.0.2, pytest 8.4.2, psutil 7.2.2), the full `ops/backup` suite
 passed: **46 passed, 0 failed, 0 skipped**. Age 1.3.2 test binaries were selected
 explicitly from the existing local verification tool directory. The scheduler's
-synthetic end-to-end path created a fake PostgreSQL custom archive, encrypted and
-authenticated it with age/X25519, published only `.age` plus its informational
+synthetic end-to-end path supplied fixture bytes through a fake PostgreSQL
+interface, encrypted and authenticated them with age/X25519, published only `.age` plus its informational
 manifest to a disposable destination, verified it locally, then crossed a mocked
 upload boundary with ciphertext only. No production database, Docker service or
 volume, credential, or remote service was accessed.

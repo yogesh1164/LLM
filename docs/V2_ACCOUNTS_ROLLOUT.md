@@ -56,6 +56,68 @@ Agent names are unique per owner; null legacy owners retain a separate unique
 index. Existing data stays unassigned and invisible in account mode. The
 migration never selects an owner or creates a user. Downgrade refuses data loss.
 
+### Final isolated PostgreSQL 16 rehearsal - 2026-11-07
+
+This rehearsal used two uniquely named throwaway PostgreSQL 16 containers with
+tmpfs data directories and dedicated bridge networks bound to loopback-only host
+ports. One fixture began at `0005_custom_workflows`; a separate fixture tested the
+runtime/migrator/backup role split. Neither joined the production or development
+network, and both were removed after the run. Existing containers and volume names
+were compared before and after and matched. No production database connection was
+made.
+
+At revision 0005, the synthetic data had one row in each of eight legacy tables:
+`tasks`, `agent_executions`, `custom_agents`, `custom_agent_executions`,
+`custom_workflows`, `custom_workflow_steps`, `custom_workflow_runs`, and
+`custom_workflow_step_runs`. A pre-migration backup encrypted with age 1.3.2
+X25519 was created and validated before the migration sequence. `0006_durable_executions` and then
+`0007_accounts_ownership` were applied explicitly. Every legacy snapshot and row
+count matched after both migrations; new `owner_id` columns remained null. Before
+bootstrap, `users`, `account_sessions`, and `durable_executions` each had zero rows.
+The schema verifier passed at `0007_accounts_ownership`.
+
+An injected index-creation failure during 0007 left the source at 0006, with no
+partial `users` table or task owner column. The saved 0005 encrypted backup was
+restored into a separately named `agentflow_restore_*` database in the disposable
+cluster. Its archive SHA-256 validated and all eight synthetic table counts and
+record snapshots matched; the restored revision was 0005. This did not restore
+over the failed source database. A subsequent normal upgrade reached 0007 and
+again preserved all eight tables with null legacy ownership.
+
+Administrator provisioning was rehearsed through `app.account_operator` against
+the fixture with a synthetic password supplied only to the test input boundary.
+The password was absent from CLI output and persisted only as a password hash.
+Interactive terminal requirements, mismatch rejection, session/CSRF handling,
+login/logout revocation, member isolation, mocked workflow execution, process
+crash recovery, and no-replay behavior passed against the disposable PostgreSQL
+fixtures. The role suite passed its runtime write path and forbidden DDL/admin
+operation checks; migrator-only schema changes and backup read-only access passed.
+
+This rehearsal does not authorize production execution. For a real approved
+maintenance window, confirm the restored target is at `0005_custom_workflows`,
+then run `alembic upgrade 0006_durable_executions`, verify journal constraints,
+then run `alembic upgrade 0007_accounts_ownership`; run the account/durable schema
+verifiers and compare legacy counts/digests. Never substitute `upgrade head` for
+those reviewed revision boundaries. Create the first administrator only after 0007
+using the interactive command
+`python -m app.account_operator --expect-database DATABASE bootstrap --login LOGIN --approval APPROVAL_REF`.
+Keep the backup and source untouched. If either migration fails, stop cutover, keep
+traffic/workers drained, inspect the revision and transactional rollback, and do
+not stamp or manually drop objects. Restore the pre-migration backup only into a
+new isolated database, reconcile writes and execution outcomes, then obtain separate
+switch approval. Migrations 0006 and 0007 deliberately refuse automatic downgrade
+because retained journals, accounts, sessions and ownership audits need a
+data-retention decision.
+
+Production cutover requires a write freeze, worker drain, reconciliation of
+uncertain provider calls, a fresh verified backup, and an outage window covering
+backup, migration, verification, admin bootstrap and application smoke checks. No
+duration was inferred from the small fixture. Operators must separately approve
+the database identity/revision, migration-role credentials and grants, administrator
+login/approval reference, legacy quarantine versus a reviewed ownership manifest,
+downtime/cutback plan and restore point. Image-security and final account-mode
+activation remain separate approvals.
+
 Before an approved cutover, rehearse on a newly restored isolated target:
 
 1. Record source database identity, revision, image IDs, row counts and fresh

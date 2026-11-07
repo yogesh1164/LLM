@@ -399,3 +399,61 @@ ACLs/endpoints, age-key custody approval, remote lifecycle/retention, external
 missed-run heartbeat, representative-size recovery measurement and RPO/RTO
 approval remain launch gates. Backup operations remain **NOT READY** for unattended
 production use.
+
+## Isolated PostgreSQL 16 migration rehearsal - 2026-11-07
+
+Source checkpoint: `cbd84ec82ca810d0e7d5d77c38511bc0c6c1c099`. The final rehearsal
+used two distinct PostgreSQL 16 fixtures (migration and least-privilege), each with
+its own temporary tmpfs data directory, dedicated network and loopback-only port.
+The pre/post container and volume inventories matched, including the existing
+private/development PostgreSQL containers and volumes. No production DB query,
+Docker volume, service or credential was used. An additional focused rerun recreated
+the migration fixture to retain exact row counts/checksums under ignored local
+`backups/final-migration-rehearsal-final-7ceed726.json` evidence.
+
+Migration fixture started at `0005_custom_workflows`. Before migration, counts were
+one row each in `tasks`, `agent_executions`, `custom_agents`,
+`custom_agent_executions`, `custom_workflows`, `custom_workflow_steps`,
+`custom_workflow_runs`, and `custom_workflow_step_runs`. The pre-migration backup
+used age 1.3.2 X25519 authenticated encryption. Plain archive SHA-256:
+`b392c85af579858d82852fa8c0f7586b80aa0b658ffda63e0f7e6c37bc96b456`;
+ciphertext SHA-256:
+`78ca2d399c00821248cb8a963723c3972f833cd517d611153718df829791f2ad`. Archive
+integrity was verified by authenticated decrypt/hash match and `pg_restore --list` before
+migration. After explicit 0006 then 0007, the eight counts remained one each and
+the canonical content snapshot matched. All legacy owner IDs remained NULL;
+`users`, `account_sessions`, and `durable_executions` were initially empty and
+the schema verifier accepted revision `0007_accounts_ownership`.
+
+Injected 0007 DDL failure left the source at `0006_durable_executions` and rolled
+back account objects and task owner column. The pre-migration backup restored into
+a separately named `agentflow_restore_*` disposable database: revision 0005,
+eight of eight counts and canonical snapshots matched. The failed target was not
+overwritten. The normal 0007 retry then succeeded and retained null legacy
+ownership. A synthetic first admin was provisioned through the operator CLI path;
+the password remained absent from output/Git and only its hash was stored.
+
+Focused results: account/durable PostgreSQL suites **29 passed**; least-privilege
+PostgreSQL suite **7 passed**; account/auth/API/ownership regressions **40 passed**;
+focused pre-backup/failure/restore/quarantine repeat **1 passed**. Login/logout,
+CSRF/origin validation, user isolation, mocked workflow execution, crash recovery,
+no-replay, runtime write permissions and denied admin/schema operations all passed
+on isolated fixtures. No test called an external model/provider. One initial setup
+attempt produced fixture connection errors because Docker Desktop did not publish
+ports from an internal-only network; those containers were removed and all suites
+were rerun successfully with separate loopback-published dedicated bridge networks.
+An intermediate focused run also stopped at the dynamic age-key helper import
+before backup/migration execution; the disposable schema was dropped by fixture
+teardown, the sibling module path was fixed, and the focused age-backed case passed.
+One intermediate focused test invocation also stopped at test setup because the
+dynamic age-key helper could not resolve its sibling module; the isolated schema
+was dropped during fixture teardown, the module path was corrected, and the
+age-backed restore/quarantine case passed on rerun.
+
+The prepared sequence remains `0005 -> 0006_durable_executions ->
+0007_accounts_ownership`, with explicit revision commands and rollback conditions
+documented in `V2_ACCOUNTS_ROLLOUT.md`. Automatic downgrade is intentionally
+refused. Production migration remains **NOT READY** until the operator approves
+the target identity/revision, migration/runtime/backup roles and credentials,
+maintenance window and downtime, administrator provisioning, legacy data quarantine
+or reviewed ownership mapping, image-security gate, and restore/cutback decision.

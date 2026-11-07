@@ -459,3 +459,48 @@ custody, production ACL/endpoint approvals, key-custody acceptance, remote
 lifecycle policy, independent missed-run heartbeat, representative-size restore,
 and operator approval of proposed 24-hour RPO / 8-hour RTO remain open. Unattended
 production backup readiness remains **NOT READY**.
+
+## Final database migration rehearsal - 2026-11-07
+
+From source checkpoint `cbd84ec82ca810d0e7d5d77c38511bc0c6c1c099`, created
+separate named PostgreSQL 16 migration and role fixtures on dedicated Docker
+networks with tmpfs storage and loopback-only host ports. They were removed after
+the run. Container IDs, running states, volume names, and production/development
+service identities matched the before-run inventory afterward. No existing
+database was queried or changed.
+
+On real PostgreSQL, synthetic revision 0005 contained one row in each of eight
+legacy tables (tasks, task stages, custom agents and executions, workflows,
+workflow steps, workflow runs, and workflow step runs). The pre-migration archive
+used age 1.3.2 X25519; authenticated integrity validated with plaintext SHA-256
+`b392c85af579858d82852fa8c0f7586b80aa0b658ffda63e0f7e6c37bc96b456` and ciphertext
+SHA-256 `78ca2d399c00821248cb8a963723c3972f833cd517d611153718df829791f2ad`. A deliberate
+0007 index failure rolled back to 0006 with no partial owner column/users table.
+The pre-0006 backup restored into a separate `agentflow_restore_*` database at
+0005 with all eight record snapshots/counts unchanged. After the successful
+0006 -> 0007 retry, counts remained one per legacy table and all legacy owner IDs
+remained null; the schema verifier passed. No ownership assignment was performed
+in the quarantine test.
+
+PostgreSQL test results: `test_accounts_postgres.py` plus
+`test_durable_postgres.py`: **29 passed**; PostgreSQL least-privilege suite:
+**7 passed**. Account operator, migration, authentication, and API unit/regression
+suite: **40 passed**. A repeat of the backup/failure/restore migration case passed
+**1 test** while writing sanitized evidence under ignored `backups/`. The rehearsal
+covered login/logout/session revocation, CSRF/origin checks, member isolation,
+mock-provider workflow execution and crash recovery/no replay on the isolated
+PostgreSQL fixture. The role suite verified the runtime role's intended writes and
+denial of administrative/schema operations. Operator bootstrap output omitted the
+synthetic password; separate tests enforced terminal-only entry and mismatch
+rejection.
+
+The first fixture attempt used Docker Desktop's internal-only bridge, which does
+not publish loopback ports; fixture setup failed before test bodies. It was cleaned
+up, and the rerun used separate dedicated bridges and loopback-only mapped ports.
+An intermediate age-backed test setup also needed a corrected sibling-module path;
+that fixture schema was dropped automatically, and the corrected focused rerun
+passed. The completed final suites had no failing tests. A separate release checkpoint records
+all row counts and checksum evidence. Production remains **NOT READY** pending an
+approved maintenance window, exact database/revision re-audit, separate role and
+credential approval, reviewed immutable images/security gate, administrator and
+legacy quarantine/assignment decision, restore/cutback plan, and approved downtime.

@@ -11,6 +11,7 @@ import sys
 import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
+from pathlib import PurePosixPath
 
 import backup
 import rclone_offhost
@@ -23,6 +24,31 @@ class ScheduleError(Exception):
 
 def load_config(path):
     config = json.loads(Path(path).read_text(encoding="utf-8"))
+    validate_config(config)
+    return config
+
+
+def validate_config(config):
+    if not isinstance(config, dict) or not isinstance(config.get("enabled"), bool):
+        raise ScheduleError("Schedule config must contain a boolean enabled flag")
+    if not config["enabled"]:
+        return
+    required = ("database", "user", "host", "key_file", "spool", "destination",
+                "status_dir", "remote_folder")
+    if any(not isinstance(config.get(key), str) or not config[key].strip()
+           or config[key].startswith("REPLACE_") for key in required):
+        raise ScheduleError("Enabled schedule config is incomplete")
+    folder = config["remote_folder"]
+    path = PurePosixPath(folder)
+    if (folder.startswith("/") or ".." in path.parts or "\\" in folder or ":" in folder
+            or any(part in {"", "."} for part in folder.split("/"))):
+        raise ScheduleError("Invalid remote folder")
+    for key, default in (("port", 5432), ("timeout_seconds", 7200), ("max_age_hours", 26)):
+        value = config.get(key, default)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+            raise ScheduleError("Invalid numeric schedule setting")
+    if config.get("port", 5432) > 65535:
+        raise ScheduleError("Invalid database port")
     return config
 
 
@@ -59,9 +85,9 @@ def _notify(message, environ):
     url = environ.get("AGENTFLOW_BACKUP_ALERT_WEBHOOK")
     if not url:
         return False
-    request = urllib.request.Request(url, data=json.dumps({"text": message}).encode(),
-                                     headers={"Content-Type": "application/json"}, method="POST")
     try:
+        request = urllib.request.Request(url, data=json.dumps({"text": message}).encode(),
+                                         headers={"Content-Type": "application/json"}, method="POST")
         with urllib.request.urlopen(request, timeout=10) as response:
             return 200 <= response.status < 300
     except Exception:
@@ -69,14 +95,15 @@ def _notify(message, environ):
 
 
 def run(config, *, runner=subprocess.run, environ=None, now=None):
+    validate_config(config)
+    if config.get("enabled") is not True:
+        return {"status": "disabled"}
     environ = os.environ if environ is None else environ
     now = now or datetime.now(UTC)
     status_dir = Path(config["status_dir"])
     status_dir.mkdir(parents=True, exist_ok=True)
     log = status_dir / "schedule.jsonl"
     try:
-        if config.get("enabled") is not True:
-            return {"status": "disabled"}
         outcome = _run(config, runner)
     except (ScheduleError, KeyError, OSError, ValueError, TypeError, subprocess.SubprocessError):
         outcome = {"status": "failed", "error": "backup job failed"}

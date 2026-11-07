@@ -425,3 +425,37 @@ The review began at clean branch `feature/v2-production-hardening`, HEAD and ori
 Local frontend ESLint, `tsc --noEmit`, and encoding check passed. Candidate backend and frontend Docker builds passed; frontend first failed with npm `ECONNRESET` on default build networking, then passed on host networking. Playwright reported 29 passed, 3 skipped, normal exit in 33.9 seconds with `NEXT_DIST_DIR=.next-playwright-security-20261102`; the previous shutdown hang did not reproduce. Hosted backend, durable Postgres, least-privilege Postgres, encrypted-backup, frontend, secret-scan and Compose jobs passed. No database/volume or running private service was touched.
 
 Evidence lives in `security/evidence/2026-11-02`. The CI action emits Grype text, not native JSON/SBOM/full package inventory; the parsed finding JSON is retained with raw logs. Local Grype 0.121.0 database refresh attempts stalled and were canceled before database status or scan output was available, so a local updated scan is not claimed.
+
+## Backup scheduler verification - 2026-11-07
+
+Verified commit before this pass: `896ab46852c7f86677b012b7f8ff49924a9a8fb3`.
+Created isolated Python 3.12.10 environment `.venv-backup-verify` using the
+repository's `ops/backup/requirements-test.txt`: cryptography 50.0.2, pytest
+8.4.2, psutil 7.2.2. Age 1.3.2 and age-keygen 1.3.2 test binaries from the
+existing local verification tool directory were supplied explicitly through
+test-only environment variables. No production endpoint, database, service,
+Docker volume, OAuth credential or remote was contacted.
+
+`pytest -q -p no:cacheprovider ops/backup`: **46 passed, 0 failed, 0 skipped**.
+Coverage included disabled and invalid configuration, a complete synthetic
+PostgreSQL-dump/age-encrypt/local-verify/publish scheduler path, ciphertext header
+and plaintext-marker exclusion before the upload boundary, mocked remote
+upload/readback failures, checksum/source-change failure, stale freshness,
+sanitized failure logging/alert outcomes, and preservation of the prior verified
+ciphertext on failed runs. Existing backup, retention, monitor, streaming and
+rclone adapter regressions also passed in temporary directories.
+
+CLI smoke checks: the checked-in example returned `{"status":"disabled"}` and
+did not start work; malformed `enabled` config returned exit 1 before backup
+execution. Gitleaks v8.24.3 scanned the proposed Git history: no leaks found.
+`client_secret_*.json` is ignored; the local OAuth client-secret JSON was
+confirmed untracked through Git metadata only and was never opened. Secret scan
+covered committed tracked history, not ignored/untracked secret files.
+
+No Task Scheduler task was registered or enabled. The runbook specifies a disabled
+XML import procedure, action path, daily trigger, two-hour timeout, non-overlap
+setting and protected worker configuration. OAuth Testing mode, durable token
+custody, production ACL/endpoint approvals, key-custody acceptance, remote
+lifecycle policy, independent missed-run heartbeat, representative-size restore,
+and operator approval of proposed 24-hour RPO / 8-hour RTO remain open. Unattended
+production backup readiness remains **NOT READY**.

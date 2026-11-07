@@ -275,6 +275,21 @@ configure an independent heartbeat for a missing execution or nonzero exit,
 because no script can alert if the host never runs it. Do not enable a real schedule
 until authentication, ACL, endpoint, scope, key custody and RPO/RTO approvals close.
 
+For a reviewable, disabled Windows task definition, create an XML file with the
+approved service account and these settings, then import it with Task Scheduler's
+**Import Task** action. Keep `<Enabled>false</Enabled>` in the XML. Set **Program**
+to `C:\AgentFlowBackupWorker\Scripts\python.exe`, **Arguments** to
+`C:\seamdigitech\LLM\ops\backup\schedule.py --config C:\AgentFlowBackupWorker\schedule.json`,
+and **Start in** to `C:\seamdigitech\LLM`. Set a daily trigger at the approved
+window, execution limit to two hours, and multiple instances to **Do not start a
+new instance**. Configure the service account's logon mode and local security
+rights through the operator's normal Windows account-management process; do not
+put its password in XML or command history. Review the imported task's account,
+trigger, action, working directory, timeout, overlap policy and disabled state.
+Enable it only after the outstanding production approvals. The worker config must
+be a protected copy and set `enabled: true` only at that later approval step. This
+task definition is a procedure, not an installed or enabled task.
+
 Independently schedule the delivered-artifact monitor and alert on nonzero exit:
 
 ```powershell

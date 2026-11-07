@@ -371,3 +371,31 @@ are completed. Refer to the dated runbook section for a remediation proposal and
 official Google references.
 
 Evidence: `docs/security/evidence/2026-11-02/backup-recovery-drill.json`.
+
+## Backup scheduler verification - 2026-11-07
+
+At verification start local HEAD was `896ab46852c7f86677b012b7f8ff49924a9a8fb3`.
+Using isolated Python 3.12.10 and pinned backup test requirements
+(cryptography 50.0.2, pytest 8.4.2, psutil 7.2.2), the full `ops/backup` suite
+passed: **46 passed, 0 failed, 0 skipped**. Age 1.3.2 test binaries were selected
+explicitly from the existing local verification tool directory. The scheduler's
+synthetic end-to-end path created a fake PostgreSQL custom archive, encrypted and
+authenticated it with age/X25519, published only `.age` plus its informational
+manifest to a disposable destination, verified it locally, then crossed a mocked
+upload boundary with ciphertext only. No production database, Docker service or
+volume, credential, or remote service was accessed.
+
+Tests also covered disabled and invalid config, failed backup command,
+upload/readback failure, stale freshness, failed alert delivery, sanitized logs,
+checksum/source-change detection and preservation of the last valid ciphertext.
+The disabled example CLI smoke returned `{"status":"disabled"}`; invalid config
+returned exit 1 before job execution. Gitleaks v8.24.3 scanned the proposed Git
+history and reported no leaks. OAuth JSON exclusion was verified without opening
+the file: Git reports the pattern ignored and the path untracked. `.gitignore` now
+excludes `client_secret_*.json`.
+
+No Task Scheduler task was registered. Durable OAuth authentication, worker
+ACLs/endpoints, age-key custody approval, remote lifecycle/retention, external
+missed-run heartbeat, representative-size recovery measurement and RPO/RTO
+approval remain launch gates. Backup operations remain **NOT READY** for unattended
+production use.

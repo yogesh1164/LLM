@@ -1,0 +1,61 @@
+{
+  "status": "PASS",
+  "artifact": "agentflow-20261102T163528Z-4e4c1adc7d8f45898ad6112e65339a2b.age",
+  "artifact_size_bytes": 40334,
+  "encryption": "age v1.3.2, X25519, authenticated streaming encryption",
+  "source_ciphertext_sha256": "dedfab2f305c99a6accee3bfb15aac2fdbf43123653144a5690d20ea8255d8c9",
+  "download_ciphertext_sha256": "dedfab2f305c99a6accee3bfb15aac2fdbf43123653144a5690d20ea8255d8c9",
+  "ciphertext_checksum_match": true,
+  "plaintext_marker_scan": "PASS; all 13 long synthetic record values/fragments absent from both source and downloaded ciphertext",
+  "remote_object": "agentflow-gdrive:AgentFlow-AI-Encrypted-Backups/agentflow-20261102T163528Z-4e4c1adc7d8f45898ad6112e65339a2b.age",
+  "remote_upload": "PASS; exact-file upload and rclone full-download check verified",
+  "separate_download": "PASS",
+  "decryption": "PASS; recovered archive SHA-256 matches local source manifest",
+  "restore": "PASS",
+  "postgres_major_version": 16,
+  "schema_table_count": 15,
+  "required_tables": [
+    "account_sessions",
+    "alembic_version",
+    "durable_executions",
+    "tasks",
+    "users"
+  ],
+  "synthetic_row_counts": {
+    "users": 1,
+    "tasks": 1,
+    "account_sessions": 1,
+    "durable_executions": 1
+  },
+  "migration": "0007_accounts_ownership",
+  "table_owner": "af_restore_owner",
+  "logical_snapshot_sha256": "3a39a845a3be3af15e3f49baaaf37506d19cacdb037e509839e83270f7cc829e",
+  "source_fixture": {
+    "format": 2,
+    "created_utc": "2026-11-02T16:35:29.304146+00:00",
+    "identity": {
+      "database": "agentflow_backup_fixture",
+      "user": "af_backup",
+      "version": 160015
+    },
+    "archive_sha256": "279437b6cde3cf8f91192dc6fc7d3ed6a6bed293d2c3bd325c5775a7fd2476aa",
+    "ciphertext_sha256": "dedfab2f305c99a6accee3bfb15aac2fdbf43123653144a5690d20ea8255d8c9",
+    "artifact": "agentflow-20261102T163528Z-4e4c1adc7d8f45898ad6112e65339a2b.age",
+    "encryption": "age/X25519",
+    "delivery_adapter": "filesystem",
+    "off_host_verified": false,
+    "synthetic_restore_verified": true,
+    "matching_tables": 15,
+    "migration": "0007_accounts_ownership",
+    "owner": "af_restore_owner",
+    "account_readiness_verified": true,
+    "backup_seconds": 1.5,
+    "restore_validation_seconds": 12.032,
+    "destination": "independent temporary local filesystem",
+    "independent_recovery_worker": true,
+    "fixture_network": "none"
+  },
+  "credential_handling": "age identity kept in separate local recovery directory; no private key, dump, manifest or secret sent to rclone; only .age object uploaded",
+  "oauth_testing_mode": "Refresh tokens for external OAuth consent screen in Testing expire after 7 days (unless only basic profile scopes); production unattended readiness not established.",
+  "production_backup_ready": false
+}

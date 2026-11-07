@@ -1,0 +1,16 @@
+{
+  "enabled": false,
+  "database": "REPLACE_WITH_APPROVED_DATABASE",
+  "user": "REPLACE_WITH_SELECT_ONLY_BACKUP_ROLE",
+  "host": "REPLACE_WITH_APPROVED_PRIVATE_ENDPOINT",
+  "port": 5432,
+  "key_file": "REPLACE_WITH_PROTECTED_AGE_IDENTITY_PATH",
+  "spool": "REPLACE_WITH_ENCRYPTED_RESTRICTED_SPOOL",
+  "destination": "REPLACE_WITH_RESTRICTED_LOCAL_STAGING_DIRECTORY",
+  "status_dir": "REPLACE_WITH_RESTRICTED_LOG_DIRECTORY",
+  "remote": "agentflow-gdrive",
+  "remote_folder": "AgentFlow-AI-Encrypted-Backups",
+  "rclone": "rclone",
+  "timeout_seconds": 7200,
+  "max_age_hours": 26
+}

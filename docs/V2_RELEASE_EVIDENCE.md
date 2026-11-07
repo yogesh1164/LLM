@@ -329,3 +329,45 @@ At review start, `feature/v2-production-hardening`, local HEAD and origin pointe
 Local frontend ESLint, TypeScript, encoding checks passed. Isolated backend and frontend candidate Docker builds passed; first isolated-network frontend attempt failed transient npm `ECONNRESET`, host-network retry passed. Local Playwright: 29 passed, 3 skipped, 33.9 seconds, normal exit using isolated `NEXT_DIST_DIR=.next-playwright-security-20261102`; no previous shutdown hang reproduced. Hosted CI passed backend unit, durable Postgres, least-privilege Postgres, backup, frontend, secrets and Compose jobs. Grype v0.121.0 was verified locally, but its DB update could not complete; no local fresh-database scan is claimed. Exact hosted digest scans are the fresh image baseline.
 
 `security/evidence/2026-11-02` contains npm audit/tree JSON, hosted run metadata and raw job logs. Parsed Grype findings are derived from text logs because the current action did not emit JSON/SBOM. No production tag, service, database, volume, environment file or credential was modified.
+
+## Google Drive synthetic encrypted recovery drill - 2026-11-02
+
+Branch `feature/v2-production-hardening`; local HEAD at drill start
+`0d29bb1f1166240acf4cd1bab414459a4c671e7a`. The previously untracked Google
+OAuth client-secret file was left unopened and untouched. The drill used the
+existing `agentflow-backend:security-baseline-5049730` image and a locally
+verified PostgreSQL 16.15 image, both for new `--network none`/tmpfs containers
+only. No production or development database/service/configuration was used.
+
+The final synthetic artifact was age 1.3.2 X25519 encrypted, 40,334 bytes, with
+source/download ciphertext SHA-256
+`dedfab2f305c99a6accee3bfb15aac2fdbf43123653144a5690d20ea8255d8c9`. It was
+uploaded alone to `agentflow-gdrive:AgentFlow-AI-Encrypted-Backups`, verified by
+the adapter's exact-file download comparison, downloaded separately, decrypted
+with the separately held ephemeral identity, and restored into a new isolated
+PostgreSQL database. All 15 public tables matched in the existing fixture's local
+recovery; the Drive-retrieved restore had all 15 tables, the expected one-row
+synthetic user/task/session/durable-execution records, migration
+`0007_accounts_ownership`, and `af_restore_owner`. Archive SHA-256 matched the
+local manifest; the recovered logical snapshot SHA-256 is recorded in
+[`backup-recovery-drill.json`](security/evidence/2026-11-02/backup-recovery-drill.json).
+Three synthetic `.age` objects were visible in the Drive folder at completion
+(the successful object and two earlier harness retries); no key, sidecar, dump,
+or secret was uploaded. They remain under operator-managed retention because
+remote deletion was not part of the approved adapter workflow.
+
+Docker inventory after the drill showed only the same private and development
+services, all still running; volume names matched the pre-drill inventory. New
+containers used tmpfs, and their cleanup removed no volume. The local recovery
+identity and plaintext dump were deleted after verification. No production
+readiness is inferred: the OAuth application is still reported in Testing mode,
+where Google's external-app refresh-token lifetime is seven days (except basic
+profile scopes). This is a **successful synthetic off-site recovery demonstration**,
+not proof of unattended production authentication or schedule reliability.
+The backup system remains **NOT READY** until the consent app/scope and durable
+authentication arrangement, secure token and age-key custody, access review,
+retention, monitoring/alerting, representative-size restore, and approved RPO/RTO
+are completed. Refer to the dated runbook section for a remediation proposal and
+official Google references.
+
+Evidence: `docs/security/evidence/2026-11-02/backup-recovery-drill.json`.

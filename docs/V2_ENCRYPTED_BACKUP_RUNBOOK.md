@@ -15,7 +15,7 @@ temporary local filesystem, no external provider/account or production schedule 
 configured, and no real production artifact was sent. This drill does not set a
 production RPO/RTO or prove key-custody recovery.
 
-## Prepared rclone transfer (not verified against Google Drive)
+## Prepared rclone transfer (historical status; synthetic recovery verified 2026-11-02)
 
 **2026-10-25 gate:** Google Drive delivery is **BLOCKED BY OPERATOR** pending
 manual OAuth client repair and separately authorized connectivity/recovery tests.
@@ -259,13 +259,23 @@ reviewed adapter; no object-account access was invented or configured here.
 
 ## Failure detection and retention
 
-Schedule the backup through Windows Task Scheduler using the dedicated service
-identity, restricted working directory and a wrapper that throws/exits nonzero on
-`$LASTEXITCODE`. Set bounded runtime and prohibit overlapping jobs. Configure an
-external heartbeat/Task Scheduler failure alert for nonzero exit **and a missing
-execution**. A backup script alone cannot alert if the host never runs it.
+[`ops/backup/schedule.example.json`](../ops/backup/schedule.example.json) is a
+disabled configuration template with no credential or key material. `schedule.py`
+starts the age-only backup CLI, then passes exactly one `.age` artifact and its
+local manifest to the rclone adapter for full remote readback verification. It
+logs one sanitized JSONL status line per completed enabled run. Failures produce a
+nonzero exit and a generic optional webhook alert through
+`AGENTFLOW_BACKUP_ALERT_WEBHOOK`; provision that endpoint in a protected worker
+secret store. Alert content excludes paths and tool diagnostics.
 
-Independently schedule the delivered-artifact monitor:
+After approval, configure Windows Task Scheduler under the dedicated service
+identity with a daily trigger, bounded runtime, and no overlapping runs. Use a
+protected worker-local config copy; the checked-in example remains disabled. Also
+configure an independent heartbeat for a missing execution or nonzero exit,
+because no script can alert if the host never runs it. Do not enable a real schedule
+until authentication, ACL, endpoint, scope, key custody and RPO/RTO approvals close.
+
+Independently schedule the delivered-artifact monitor and alert on nonzero exit:
 
 ```powershell
 & $backupPython ops\backup\monitor.py `
@@ -293,6 +303,30 @@ the remote lifecycle/immutability/hold policy has been accepted. Keep at least t
 points and never delete the last known-good set. Monitor capacity and lifecycle
 jobs. Logical daily backups imply a potential 24-hour RPO, not point-in-time
 recovery; WAL archiving/PITR is not implemented here.
+
+Proposed approval targets: **RPO 24 hours** for daily logical backups and
+**RTO 8 hours** to provision an isolated PostgreSQL 16 target, restore and validate
+the database, and complete operator access/session checks. These are planning
+targets, not measured guarantees; the small synthetic drill does not establish
+production-sized restore duration. Measure a representative synthetic dataset
+before accepting the RTO. A tighter RPO requires separately engineered and tested
+WAL/PITR coverage.
+
+### Age/X25519 key custody and recovery
+
+Keep the age identity outside the repository, worker spool, backup destination,
+rclone profile and application volumes. Grant the worker access only to the public
+recipient for encryption where practical; keep the private identity in a managed
+secret vault or offline recovery vault with at least two named custodians and
+audited retrieval. Maintain an encrypted, access-controlled recovery copy in a
+separate failure domain, with inventory and key creation/rotation dates but no key
+bytes in tickets or routine logs. Test retrieval under dual control during each
+recovery exercise. A lost identity makes corresponding ciphertext unrecoverable.
+Preserve retired identities until every artifact encrypted to them has expired and
+holds are cleared. Never email or upload the identity with the archive. Restore by
+retrieving ciphertext independently, retrieving the matching identity through
+separate custody, validating age authentication and archive listing, then restoring
+only to a new empty isolated database.
 
 Rotate backup login credentials independently of the encryption key: provision a
 replacement least-privilege login, verify backup/restore with it, update the
@@ -410,3 +444,68 @@ binary mirrors were used. Independent [Sigsum proof verification](https://github
 was not performed in this run; use trusted OS packaging or the upstream verification
 procedure for the selected worker's toolchain. Downloaded tools, synthetic keys
 and archive data are not committed.
+
+## Synthetic Google Drive recovery drill - 2026-11-02
+
+This dated result supersedes the 2026-10-25 statement below that Google Drive
+upload/recovery was unverified. The test used only a newly created PostgreSQL
+16.15 fixture with synthetic records, isolated by Docker `--network none` and
+`tmpfs`; the backup and independent restore used new temporary containers and
+no named volumes. No production or development database was queried or changed.
+
+- **PASS - encryption and local source fixture:** official age 1.3.2, X25519
+authenticated streaming encryption; existing backup tooling produced a
+PostgreSQL custom archive and its `.age` artifact. The existing fixture
+restored and matched all 15 tables at `0007_accounts_ownership` and passed
+account-readiness checks.
+- **PASS - plaintext exclusion:** ciphertext header was age; all 13 synthetic plaintext record values/fragments were absent from both the source and downloaded ciphertext. Only the `.age`
+file was supplied to the rclone adapter. No manifest, identity/private key,
+plaintext dump, OAuth credential, or application secret was uploaded.
+- **PASS - Drive transfer/readback:** exact object
+`agentflow-gdrive:AgentFlow-AI-Encrypted-Backups/agentflow-20261102T163528Z-4e4c1adc7d8f45898ad6112e65339a2b.age`,
+40,334 bytes. Adapter upload and `rclone check --download --one-way` passed.
+A separate `rclone copyto` download had the same SHA-256 as the source:
+`dedfab2f305c99a6accee3bfb15aac2fdbf43123653144a5690d20ea8255d8c9`.
+- **PASS - authenticated recovery:** independently downloaded artifact
+decrypted with a separate temporary recovery identity; plaintext archive
+SHA-256 matched the backup manifest and `pg_restore --list` validation passed.
+A second new PostgreSQL 16 container restored it successfully. All 15 public
+tables were present; `users`, `tasks`, `account_sessions`, and
+`durable_executions` each had the expected single synthetic row; migration
+was `0007_accounts_ownership`; restored table owner was `af_restore_owner`.
+Canonical restored snapshot SHA-256:
+`3a39a845a3be3af15e3f49baaaf37506d19cacdb037e509839e83270f7cc829e`.
+- **PASS - cleanup/isolation:** both disposable containers were removed by the
+fixture. Their PostgreSQL data lived only on tmpfs. No existing Docker volume
+was mounted, created, or removed. The production/private and development
+application containers remained running and healthy; the before/after volume
+name inventory was unchanged. The temporary identity and decrypted dump were
+deleted after recovery. Sanitized evidence is in
+[`backup-recovery-drill.json`](security/evidence/2026-11-02/backup-recovery-drill.json).
+
+Two earlier synthetic transfer attempts left additional `.age` test objects in
+the same Drive folder before the restore harness was corrected. The final folder
+listing showed three 2026-11-02 `.age` objects total, including the successful
+artifact above; no keys, manifests, plaintext dumps, or secrets were uploaded.
+The transfer adapter deliberately has no remote deletion operation, so these
+ciphertext-only test objects remain subject to operator-managed retention.
+They are not production backups and must not be counted as scheduled backup
+coverage.
+
+**Readiness remains NOT READY for production unattended backups.** The operator
+reports that the OAuth consent app remains in Google Testing mode. Google's
+[OAuth documentation](https://developers.google.com/identity/protocols/oauth2)
+states refresh tokens for external apps in Testing expire after seven days,
+except for basic profile scopes. A successful one-time Drive transfer does not
+prove long-lived unattended authentication. Before relying on this destination,
+move the consent app to production after required verification, use the narrowest
+approved Drive scope compatible with the restricted destination, store the
+refresh token in a managed secret store accessible only to the backup identity,
+and monitor token refresh/upload failures. If the organization uses Google
+Workspace Shared Drives, evaluate a dedicated service identity with explicitly
+granted access and tested key/retention controls; do not assume a service account
+can access a user's My Drive. Confirm scope, folder access list, token renewal,
+alerting, retention, key custody, schedule and an operator-approved RPO/RTO
+before production acceptance. See Google's
+[Drive authorization scope guidance](https://developers.google.com/workspace/drive/api/guides/api-specific-auth)
+and [testing-mode token expiry note](https://support.google.com/cloud/answer/15549945?hl=en).

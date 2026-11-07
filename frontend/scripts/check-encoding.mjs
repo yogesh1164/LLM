@@ -4,6 +4,7 @@ import { dirname, resolve } from "node:path";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const files = [
+  "src/app/AccountGate.tsx",
   "src/app/page.tsx",
   "src/app/ResultsPanel.tsx",
   "src/app/AgentStudio.tsx",

@@ -4,9 +4,12 @@ import asyncio
 import logging
 import random
 import time
+from functools import partial
 from typing import Any
 
 from app.config import Settings, settings
+from app.durable_execution import before_provider, current_lease
+from app.provider_capacity import ProviderBusyError, provider_capacity
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +62,8 @@ async def generate_gemini_stage(
     deadline = time.monotonic() + request_timeout
 
     def generate(timeout: float) -> tuple[str, int, int, list[dict[str, str]]]:
+        # Recheck after executor queueing; cancellation cannot stop this thread.
+        before_provider()
         from google import genai
 
         client = genai.Client(
@@ -88,9 +93,9 @@ async def generate_gemini_stage(
                 response = client.interactions.create(**request_options)
             finally:
                 logger.info(
-                    "Gemini SDK request finished: stage=%s duration_seconds=%.2f",
-                    stage_name,
-                    time.monotonic() - api_started,
+                    "provider_completed",
+                    extra={"event": "provider_completed",
+                           "duration_ms": round((time.monotonic() - api_started) * 1000, 2)},
                 )
         finally:
             client.close()
@@ -110,10 +115,13 @@ async def generate_gemini_stage(
         logger.info("Gemini request attempt: stage=%s attempt=%d", stage_name, attempt + 1)
         try:
             output, input_tokens, output_tokens, sources = await asyncio.wait_for(
-                asyncio.to_thread(generate, min(remaining, 45)), timeout=remaining
+                provider_capacity.run(
+                    partial(generate, min(remaining, 45)),
+                    limit=config.provider_max_concurrency,
+                ), timeout=remaining
             )
             break
-        except TimeoutError:
+        except (TimeoutError, ProviderBusyError):
             raise
         except Exception as exc:
             status = getattr(exc, "status_code", None) or getattr(exc, "code", None)
@@ -126,7 +134,8 @@ async def generate_gemini_stage(
                 term in lowered for term in ("rate limit", "too many requests", "try again", "retry")
             )
             retryable = status == 503 or transient_429
-            if not retryable or attempt >= config.provider_retry_attempts:
+            if (not retryable or attempt >= config.provider_retry_attempts
+                    or current_lease.get() is not None):
                 from app.providers import ProviderRequestError
 
                 raise ProviderRequestError(status, message.replace(

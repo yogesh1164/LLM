@@ -5,12 +5,15 @@ from uuid import UUID, uuid4
 
 from sqlalchemy import (
     JSON,
+    Boolean,
+    CheckConstraint,
     DateTime,
     ForeignKey,
     Index,
     Integer,
     String,
     Text,
+    UniqueConstraint,
     Uuid,
     create_engine,
     select,
@@ -169,6 +172,40 @@ class CustomWorkflowStepRun(Base):
     run: Mapped[CustomWorkflowRun] = relationship(back_populates="steps")
 
 
+class DurableExecution(Base):
+    """One-use idempotency reservation; retained even when its result is deleted."""
+
+    __tablename__ = "durable_executions"
+    __table_args__ = (
+        UniqueConstraint("scope", "key_digest", name="uq_durable_scope_key"),
+        CheckConstraint("state IN ('running', 'completed', 'failed', 'interrupted')",
+                        name="ck_durable_state"),
+        CheckConstraint("(CASE WHEN task_id IS NULL THEN 0 ELSE 1 END + "
+                        "CASE WHEN agent_execution_id IS NULL THEN 0 ELSE 1 END + "
+                        "CASE WHEN workflow_run_id IS NULL THEN 0 ELSE 1 END) <= 1",
+                        name="ck_durable_one_target"),
+        Index("ix_durable_expiry", "state", "lease_expires_at"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    scope: Mapped[str] = mapped_column(String(40), nullable=False)
+    operation: Mapped[str] = mapped_column(String(40), nullable=False)
+    key_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    request_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    state: Mapped[str] = mapped_column(String(20), nullable=False)
+    lease_token: Mapped[str] = mapped_column(String(36), nullable=False)
+    lease_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    heartbeat_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    provider_started: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    task_id: Mapped[str | None] = mapped_column(
+        ForeignKey("tasks.id", ondelete="SET NULL"), unique=True)
+    agent_execution_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("custom_agent_executions.id", ondelete="SET NULL"), unique=True)
+    workflow_run_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("custom_workflow_runs.id", ondelete="SET NULL"), unique=True)
+
+
 engine = create_engine(settings.database_url, pool_pre_ping=True)
 SessionLocal = sessionmaker(engine, expire_on_commit=False)
 
@@ -196,22 +233,27 @@ def _task_elapsed_ms(task: Task) -> int | None:
 
 
 def create_task(prompt: str) -> str:
+    from app.ownership import claim, scoped
     with SessionLocal.begin() as session:
         if settings.task_retention_days:
             cutoff = datetime.now(UTC) - timedelta(days=settings.task_retention_days)
-            expired = session.scalars(select(Task).where(Task.created_at < cutoff)).all()
+            expired = session.scalars(scoped(select(Task).where(Task.created_at < cutoff), Task)).all()
             for old_task in expired:
                 session.delete(old_task)
         task = Task(prompt=prompt, status="running")
         session.add(task)
         session.flush()
         task_id = task.id
+        claim(session, Task, task_id)
+        from app.durable_execution import attach
+        attach(session, "task_id", task_id)
     return task_id
 
 
 def delete_task_record(task_id: str) -> bool:
+    from app.ownership import get_owned
     with SessionLocal.begin() as session:
-        task = session.get(Task, task_id)
+        task = get_owned(session, Task, task_id)
         if task is None:
             return False
         session.delete(task)
@@ -221,6 +263,8 @@ def delete_task_record(task_id: str) -> bool:
 def update_task(task_id: str, *, status: str, result: dict | None = None, error: str | None = None,
                 total_tokens: int | None = None, estimated_cost: float | None = None) -> None:
     with SessionLocal.begin() as session:
+        from app.durable_execution import guard
+        guard(session)
         task = session.get(Task, task_id)
         if task:
             task.status = status
@@ -238,6 +282,8 @@ def update_task(task_id: str, *, status: str, result: dict | None = None, error:
 
 def start_stage(task_id: str, agent: str) -> str:
     with SessionLocal.begin() as session:
+        from app.durable_execution import guard
+        guard(session)
         stage = AgentExecution(task_id=task_id, agent=agent, status="running", started_at=datetime.now(UTC))
         session.add(stage)
         session.flush()
@@ -248,6 +294,8 @@ def start_stage(task_id: str, agent: str) -> str:
 def finish_stage(stage_id: str, *, output: str, input_tokens: int, output_tokens: int,
                  elapsed_ms: int = 0) -> None:
     with SessionLocal.begin() as session:
+        from app.durable_execution import guard
+        guard(session)
         stage = session.get(AgentExecution, stage_id)
         if stage:
             stage.status = "completed"
@@ -260,6 +308,8 @@ def finish_stage(stage_id: str, *, output: str, input_tokens: int, output_tokens
 
 def fail_stage(stage_id: str, error: str, *, status: str = "failed", elapsed_ms: int = 0) -> None:
     with SessionLocal.begin() as session:
+        from app.durable_execution import guard
+        guard(session)
         stage = session.get(AgentExecution, stage_id)
         if stage:
             stage.status = status
@@ -271,6 +321,8 @@ def fail_stage(stage_id: str, error: str, *, status: str = "failed", elapsed_ms:
 def finish_running_stages(task_id: str, *, status: str, error: str) -> list[str]:
     """Close any in-flight stage when the enclosing workflow times out or is cancelled."""
     with SessionLocal.begin() as session:
+        from app.durable_execution import guard
+        guard(session)
         stages = session.scalars(select(AgentExecution).where(
             AgentExecution.task_id == task_id, AgentExecution.status == "running"
         ))
@@ -289,8 +341,9 @@ def finish_running_stages(task_id: str, *, status: str, error: str) -> list[str]
 
 
 def dashboard_data() -> dict:
+    from app.ownership import scoped
     with SessionLocal() as session:
-        tasks = list(session.scalars(select(Task).order_by(Task.created_at.desc()).limit(50)))
+        tasks = list(session.scalars(scoped(select(Task).order_by(Task.created_at.desc()).limit(50), Task)))
         known_costs = [task.estimated_cost for task in tasks if task.estimated_cost is not None]
         return {
             "agents": 5,
@@ -320,8 +373,9 @@ def dashboard_data() -> dict:
 
 
 def get_task(task_id: str) -> dict | None:
+    from app.ownership import get_owned
     with SessionLocal() as session:
-        task = session.get(Task, task_id)
+        task = get_owned(session, Task, task_id)
         if not task:
             return None
         return {

@@ -1,0 +1,16 @@
+# Inactive combined account/durable overlay. See docs/V2_ACCOUNTS_ROLLOUT.md.
+# Always combine with compose.production.yml. Never activate without approval.
+services:
+  backend:
+    image: ${V2_BACKEND_IMAGE:?Select an independently reviewed V2 backend image}
+    environment:
+      AUTH_MODE: accounts
+      DURABLE_EXECUTION_ENABLED: "true"
+  frontend:
+    image: ${V2_FRONTEND_IMAGE:?Select an independently reviewed V2 frontend image}
+  migrate:
+    image: ${V2_BACKEND_IMAGE:?Select an independently reviewed V2 backend image}
+    environment:
+      AUTH_MODE: legacy_bearer
+      DURABLE_EXECUTION_ENABLED: "false"
+    command: [alembic, upgrade, "0007_accounts_ownership"]

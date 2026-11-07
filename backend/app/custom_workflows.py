@@ -6,7 +6,7 @@ import time
 from datetime import UTC, datetime
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -25,6 +25,9 @@ from app.database import (
     CustomWorkflowStep,
     CustomWorkflowStepRun,
 )
+from app.durable_execution import attach, before_provider, execution, guard
+from app.ownership import claim, get_owned, scoped
+from app.provider_capacity import ProviderBusyError
 from app.providers import ProviderConfigurationError, ProviderRequestError, run_custom_gemini_agent
 
 router = APIRouter(prefix="/api/custom-workflows", tags=["custom-workflows"])
@@ -41,7 +44,7 @@ def _run_read(row: CustomWorkflowRun) -> WorkflowRunRead:
 
 
 def _get(session, workflow_id: UUID) -> CustomWorkflow:
-    row = session.scalar(select(CustomWorkflow).options(selectinload(CustomWorkflow.steps))
+    row = session.scalar(scoped(select(CustomWorkflow), CustomWorkflow).options(selectinload(CustomWorkflow.steps))
         .where(CustomWorkflow.id == workflow_id))
     if row is None:
         raise HTTPException(status_code=404, detail="Custom workflow not found")
@@ -49,7 +52,7 @@ def _get(session, workflow_id: UUID) -> CustomWorkflow:
 
 
 def _validate_agents(session, ids: list[UUID]) -> None:
-    agents = session.scalars(select(CustomAgent).where(CustomAgent.id.in_(ids))).all()
+    agents = session.scalars(scoped(select(CustomAgent), CustomAgent).where(CustomAgent.id.in_(ids))).all()
     if len(agents) != len(ids):
         raise HTTPException(status_code=422, detail="One or more custom agents do not exist")
     if any(not agent.enabled or agent.provider != "gemini" or agent.model != settings.gemini_model for agent in agents):
@@ -62,7 +65,7 @@ def _snapshot(session, workflow_id: UUID):
         raise HTTPException(status_code=409, detail="This workflow is disabled")
     agents = []
     for step in workflow.steps:
-        agent = session.get(CustomAgent, step.agent_id)
+        agent = get_owned(session, CustomAgent, step.agent_id)
         if agent is None or not agent.enabled or agent.provider != "gemini" or agent.model != settings.gemini_model:
             raise HTTPException(status_code=409, detail="A workflow agent is missing, disabled, or unsupported")
         agents.append({
@@ -79,7 +82,7 @@ def _snapshot(session, workflow_id: UUID):
 @router.get("", response_model=list[WorkflowDefinitionRead])
 def list_definitions() -> list[WorkflowDefinitionRead]:
     with database.SessionLocal() as session:
-        rows = session.scalars(select(CustomWorkflow).options(selectinload(CustomWorkflow.steps))
+        rows = session.scalars(scoped(select(CustomWorkflow), CustomWorkflow).options(selectinload(CustomWorkflow.steps))
             .order_by(CustomWorkflow.created_at.desc())).all()
         return [_definition(row) for row in rows]
 
@@ -92,6 +95,7 @@ def create_definition(body: WorkflowDefinitionInput) -> WorkflowDefinitionRead:
         row.steps = [CustomWorkflowStep(position=i, agent_id=agent_id) for i, agent_id in enumerate(body.agent_ids)]
         session.add(row)
         session.flush()
+        claim(session, CustomWorkflow, row.id)
         return _definition(row)
 
 
@@ -125,7 +129,7 @@ def delete_definition(workflow_id: UUID) -> None:
 @router.get("/runs/{run_id}", response_model=WorkflowRunRead)
 def get_run(run_id: UUID) -> WorkflowRunRead:
     with database.SessionLocal() as session:
-        row = session.scalar(select(CustomWorkflowRun).options(selectinload(CustomWorkflowRun.steps))
+        row = session.scalar(scoped(select(CustomWorkflowRun), CustomWorkflowRun).options(selectinload(CustomWorkflowRun.steps))
             .where(CustomWorkflowRun.id == run_id))
         if row is None:
             raise HTTPException(status_code=404, detail="Custom workflow run not found")
@@ -136,7 +140,7 @@ def get_run(run_id: UUID) -> WorkflowRunRead:
 def list_runs(workflow_id: UUID) -> list[WorkflowRunRead]:
     with database.SessionLocal() as session:
         _get(session, workflow_id)
-        rows = session.scalars(select(CustomWorkflowRun).options(selectinload(CustomWorkflowRun.steps))
+        rows = session.scalars(scoped(select(CustomWorkflowRun), CustomWorkflowRun).options(selectinload(CustomWorkflowRun.steps))
             .where(CustomWorkflowRun.workflow_id == workflow_id)
             .order_by(CustomWorkflowRun.created_at.desc()).limit(30)).all()
         return [_run_read(row) for row in rows]
@@ -144,6 +148,7 @@ def list_runs(workflow_id: UUID) -> list[WorkflowRunRead]:
 
 def _save_step(run_id: UUID, position: int, **fields) -> None:
     with database.SessionLocal.begin() as session:
+        guard(session)
         row = session.scalar(select(CustomWorkflowStepRun).where(
             CustomWorkflowStepRun.run_id == run_id, CustomWorkflowStepRun.position == position))
         if row is None:
@@ -154,7 +159,8 @@ def _save_step(run_id: UUID, position: int, **fields) -> None:
 
 def _finish_run(run_id: UUID, status: str, *, result: str | None = None, error: str | None = None) -> WorkflowRunRead:
     with database.SessionLocal.begin() as session:
-        row = session.scalar(select(CustomWorkflowRun).options(selectinload(CustomWorkflowRun.steps))
+        guard(session)
+        row = session.scalar(scoped(select(CustomWorkflowRun), CustomWorkflowRun).options(selectinload(CustomWorkflowRun.steps))
             .where(CustomWorkflowRun.id == run_id))
         if row is None:
             raise RuntimeError("Workflow run record missing")
@@ -180,6 +186,7 @@ async def _execute(run_id: UUID, task: str, agents: list[dict]) -> WorkflowRunRe
         _save_step(run_id, position, status="running")
         started = time.monotonic()
         try:
+            before_provider()
             result = await asyncio.wait_for(run_custom_gemini_agent(
                 name=agent["name"], instructions=agent["instructions"], prompt=prompt,
                 model=agent["model"], temperature=agent["temperature"],
@@ -205,6 +212,11 @@ async def _execute(run_id: UUID, task: str, agents: list[dict]) -> WorkflowRunRe
             _save_step(run_id, position, status="timed_out", error=message,
                 elapsed_ms=int((time.monotonic() - started) * 1000))
             return _finish_run(run_id, "timed_out", result=last_output or None, error=message)
+        except ProviderBusyError:
+            message = "AI workers are busy; try again shortly"
+            _save_step(run_id, position, status="failed", error=message,
+                elapsed_ms=int((time.monotonic() - started) * 1000))
+            return _finish_run(run_id, "failed", result=last_output or None, error=message)
         except (ProviderConfigurationError, ProviderRequestError, ValueError):
             # Do not expose provider raw exceptions, which might contain credentials.
             message = "Provider failed or returned invalid output; check server logs and provider availability"
@@ -219,7 +231,9 @@ async def _execute(run_id: UUID, task: str, agents: list[dict]) -> WorkflowRunRe
     return _finish_run(run_id, "completed", result=last_output)
 
 @router.post("/{workflow_id}/execute", response_model=WorkflowRunRead)
-async def execute_definition(workflow_id: UUID, body: WorkflowRunInput) -> WorkflowRunRead:
+@execution("custom_workflow")
+async def execute_definition(workflow_id: UUID, body: WorkflowRunInput,
+                             http_request: Request = None) -> WorkflowRunRead:
     with database.SessionLocal.begin() as session:
         name, agents = _snapshot(session, workflow_id)
         run = CustomWorkflowRun(workflow_id=workflow_id, workflow_name=name, task=body.task)
@@ -229,4 +243,6 @@ async def execute_definition(workflow_id: UUID, body: WorkflowRunInput) -> Workf
         session.add(run)
         session.flush()
         run_id = run.id
+        claim(session, CustomWorkflowRun, run_id)
+        attach(session, "workflow_run_id", run_id)
     return await _execute(run_id, body.task, agents)

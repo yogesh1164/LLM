@@ -1,5 +1,10 @@
 # AgentFlow AI
 
+V2 engineering is staged on `feature/v2-production-hardening`. See the
+[security audit](docs/V2_SECURITY_AUDIT.md) and
+[account/ownership migration design](docs/V2_ARCHITECTURE.md).
+Multi-user accounts are not enabled by this foundation.
+
 For the separate private deployment stack, audit findings, security boundaries,
 backup/restore procedures, and verification commands, see [DEPLOYMENT.md](DEPLOYMENT.md).
 The private container stack and live five-stage Gemini workflow have been tested
@@ -102,3 +107,10 @@ npm run build
 - Usage is measured after each agent run when available. Gemini cost and search charges are not estimated because actual billing tier and grounding charges are not included in the response.
 - Knowledge ingestion, schedules, persistent conversational memory, custom agent assignment to workflows, approvals for external actions, and a visual workflow editor are not implemented. Agent Studio stores custom configurations only; enabled custom agents do not run in the fixed workflow. Task prompts and outputs have no automatic expiry, so add a retention policy before storing sensitive production data. Current tools are read-only web search and model calls; no sensitive or irreversible action tool is enabled.
 - Agent Studio stores custom configurations only; enabled custom agents do not run in the fixed workflow. Task prompts and outputs have no automatic expiry, so add a retention policy before storing sensitive production data.
+## Durable execution development
+
+Frontend and backend durable execution are verified in disposable environments;
+production activation remains opt-in and approval-gated. See the
+[execution contract](docs/V2_DURABLE_EXECUTION.md),
+[private rollout/rollback](docs/V2_DURABLE_ROLLOUT.md), and
+[actual test evidence](docs/V2_VERIFICATION.md). No job queue or automatic paid replay.

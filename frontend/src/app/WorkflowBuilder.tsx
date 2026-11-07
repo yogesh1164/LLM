@@ -2,6 +2,8 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { apiFetch } from "./api";
+import { useDurableExecution } from "./useDurableExecution";
+import { ExecutionNotice } from "./ExecutionNotice";
 import { MarkdownContent } from "./ResultsPanel";
 import "./workflow-builder.css";
 
@@ -39,9 +41,11 @@ export function WorkflowBuilder() {
   const [selectedWorkflow, setSelectedWorkflow] = useState<Definition | null>(null);
   const [runs, setRuns] = useState<WorkflowRun[]>([]);
   const [runsLoading, setRunsLoading] = useState(false);
-  const [selectedRun, setSelectedRun] = useState<WorkflowRun | null>(null);
+  const [historyRun, setSelectedRun] = useState<WorkflowRun | null>(null);
+  const execution = useDurableExecution<WorkflowRun>(selectedWorkflow ? `/api/custom-workflows/${selectedWorkflow.id}/execute` : null);
+  const selectedRun = execution.data ?? historyRun;
   const [task, setTask] = useState("");
-  const [running, setRunning] = useState(false);
+  const running = execution.busy;
   const [runError, setRunError] = useState("");
   const [copyNotice, setCopyNotice] = useState("");
 
@@ -132,20 +136,16 @@ export function WorkflowBuilder() {
   }
   async function execute(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!selectedWorkflow || running || !task.trim()) return;
-    setRunning(true); setRunError("");
+    if (!selectedWorkflow || execution.client.getSnapshot().busy || !task.trim()) return;
+    setRunError("");
     try {
-      const result = await request<WorkflowRun>(`/api/custom-workflows/${selectedWorkflow.id}/execute`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ task: task.trim() }),
-      });
-      setSelectedRun(result);
+      const result = await execution.client.submit(task.trim());
       await loadRuns(selectedWorkflow.id);
-      setSelectedRun(result);
-      setTask("");
+      if (result?.status === "completed") setTask("");
     } catch (reason) {
       setRunError(reason instanceof Error ? reason.message : "Workflow execution failed.");
       await loadRuns(selectedWorkflow.id);
-    } finally { setRunning(false); }
+    }
   }
   const configuredModelAgents = agents.filter(agent => agent.enabled && agent.provider === "gemini");
   const availableAgents = configuredModelAgents.filter(agent => !form.agent_ids.includes(agent.id));
@@ -182,17 +182,17 @@ export function WorkflowBuilder() {
         <div className="wb-row"><h3>{workflow.name}</h3><span className={workflow.enabled ? "wb-enabled" : "wb-disabled"}>{workflow.enabled ? "Enabled" : "Disabled"}</span></div>
         <p>{workflow.description || "No description provided."}</p>
         <ol>{workflow.agent_ids.map((id, index) => <li key={id}>{index + 1}. {agents.find(agent => agent.id === id)?.name ?? "Deleted agent"}</li>)}</ol>
-        <div className="wb-card-actions"><button type="button" className="studio-action" onClick={() => inspect(workflow)}>View / Run</button><button type="button" className="studio-action" onClick={() => openEdit(workflow)}>Edit</button>
+        <div className="wb-card-actions"><button type="button" className="studio-action" disabled={running} onClick={() => inspect(workflow)}>View / Run</button><button type="button" className="studio-action" onClick={() => openEdit(workflow)}>Edit</button>
           <button type="button" className="studio-action destructive" disabled={busyId === workflow.id || running} onClick={() => void deleteWorkflow(workflow)}>Delete</button></div>
       </article>)}</div>}
     {selectedWorkflow && <section className="card wb-run-panel" aria-label="Workflow execution and history">
       <div className="wb-row"><div><h2>{selectedWorkflow.name}</h2><p>Execution history and step-by-step results</p></div><button type="button" className="studio-action" disabled={running} onClick={() => setSelectedWorkflow(null)}>Close</button></div>
       <form className="wb-run-form" onSubmit={event => void execute(event)}><label>Task<textarea required minLength={3} maxLength={8000} rows={3} value={task} disabled={running} onChange={e => setTask(e.target.value)} placeholder="Describe the task for this workflow…" /></label>
-        <div className="wb-row"><small>{task.length}/8000 characters · Running uses your Gemini API quota.</small><button className="primary" type="submit" disabled={!selectedCanRun || running || task.trim().length < 3}>{running ? "Running workflow…" : "Run workflow"}</button></div>
+        <div className="wb-row"><small>{task.length}/8000 characters · Running uses your Gemini API quota.</small><button className="primary" type="submit" disabled={!selectedCanRun || running || task.trim().length < 3}>{running ? "Running workflow…" : execution.submission ? "Retry same submission" : "Run workflow"}</button></div>
         {!selectedCanRun && <p className="wb-warning">Enable the workflow and all assigned Gemini agents to run it. Their models must match the configured backend model.</p>}</form>
-      {running && <p role="status" className="wb-muted">Running sequential agents. Keep this page open.</p>}
+      <ExecutionNotice execution={execution} client={execution.client} onNew={() => setTask("")} />{running && <p role="status" className="wb-muted">Running sequential agents. Keep this page open.</p>}
       {runError && <div className="notice error" role="alert">{runError}</div>}
-      <div className="wb-history-layout"><aside className="wb-history"><h3>Previous runs</h3>{runsLoading ? <p>Loading…</p> : runs.length === 0 ? <p>No runs yet.</p> : runs.map(run => <button key={run.id} type="button" className={selectedRun?.id === run.id ? "selected" : ""} onClick={() => { setSelectedRun(run); setCopyNotice(""); }}><strong>{run.status}</strong><span>{new Date(run.created_at).toLocaleString()}</span><small>{run.task}</small></button>)}</aside>
+      <div className="wb-history-layout"><aside className="wb-history"><h3>Previous runs</h3>{runsLoading ? <p>Loading…</p> : runs.length === 0 ? <p>No runs yet.</p> : runs.map(run => <button key={run.id} type="button" className={selectedRun?.id === run.id ? "selected" : ""} onClick={() => { execution.client.clearResult(); setSelectedRun(run); setCopyNotice(""); }}><strong>{run.status}</strong><span>{new Date(run.created_at).toLocaleString()}</span><small>{run.task}</small></button>)}</aside>
         <div className="wb-run-results"><h3>Execution results</h3>{selectedRun ? <>
           <p><strong>Status:</strong> {selectedRun.status}</p>{selectedRun.error && <div className="notice error" role="alert">{selectedRun.error}</div>}
           {selectedRun.steps.map(step => <div className="wb-result-step" key={step.position}><div className="wb-row"><h4>{step.position + 1}. {step.agent_name}</h4><span>{step.status}</span></div>

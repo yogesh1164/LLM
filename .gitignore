@@ -1,7 +1,11 @@
 node_modules/
 .next/
+frontend/.next-*/
 out/
 coverage/
+frontend/test-results/
+frontend/playwright-report/
+frontend/.ui-preview-*.png
 dist/
 build/
 .venv/
@@ -27,6 +31,7 @@ AgentFlow-*-backup-*/
 # Python environments and caches
 .venv/
 **/.venv/
+.venv-backup-verify/
 __pycache__/
 .pytest_cache/
 .ruff_cache/
@@ -40,6 +45,7 @@ node_modules/
 .env.*
 !.env.example
 !.env.production.example
+client_secret_*.json
 
 # Database archives and local TLS material
 backups/

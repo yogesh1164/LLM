@@ -1,0 +1,2578 @@
+{
+    "sourceCommit":  "5049730e3fd5ae3dec9286844058e43b29805322",
+    "scanner":  {
+                    "name":  "Grype",
+                    "version":  "0.97.1",
+                    "action":  "anchore/scan-action v6.5.1",
+                    "database":  "v6.1.10",
+                    "databaseBuilt":  "2026-11-02T06:26:52Z",
+                    "databaseArchiveLabel":  "vulnerability-db_v6.1.10_2026-11-02T00:22:47Z_1793600812",
+                    "databaseArchiveSha256":  "68063965a3a023acd330a65a0740976c81f8e13902824134b447deee97a0d838"
+                },
+    "severityCutoff":  "high",
+    "sourceNote":  "All Debian package/CVE/severity rows parsed from hosted action text tables; raw logs retained. This is a parsed representation, not native Grype JSON or an SBOM; refer to the raw log for source formatting.",
+    "images":  [
+                   {
+                       "image":  "agentflow-backend:ci",
+                       "digest":  "sha256:99b88399e56bf820645a4b4ba51eea976027ca53b0133e46a0de2f6184ab8679",
+                       "severitySummary":  [
+                                               {
+                                                   "severity":  "Critical",
+                                                   "uniqueCves":  0
+                                               },
+                                               {
+                                                   "severity":  "High",
+                                                   "uniqueCves":  18
+                                               },
+                                               {
+                                                   "severity":  "Medium",
+                                                   "uniqueCves":  32
+                                               },
+                                               {
+                                                   "severity":  "Low",
+                                                   "uniqueCves":  6
+                                               },
+                                               {
+                                                   "severity":  "Negligible",
+                                                   "uniqueCves":  25
+                                               }
+                                           ],
+                       "packageMatches":  [
+                                              {
+                                                  "package":  "perl-base",
+                                                  "installedVersion":  "5.40.1-6+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-82560",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "perl-base",
+                                                  "installedVersion":  "5.40.1-6+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-9538",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "zlib1g",
+                                                  "installedVersion":  "1:1.3.dfsg+really1.3.1-1+b1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-85091",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libncursesw6",
+                                                  "installedVersion":  "6.5+20250216-2",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2025-69720",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libtinfo6",
+                                                  "installedVersion":  "6.5+20250216-2",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2025-69720",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "ncurses-base",
+                                                  "installedVersion":  "6.5+20250216-2",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2025-69720",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "ncurses-bin",
+                                                  "installedVersion":  "6.5+20250216-2",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2025-69720",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "gcc-14-base",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-95619",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libgcc-s1",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-95619",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libstdc++6",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-95619",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2018-20796",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2018-20796",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "gcc-14-base",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-102010",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libgcc-s1",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-102010",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libstdc++6",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-102010",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "bsdutils",
+                                                  "installedVersion":  "1:2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-3184",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libblkid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-3184",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "liblastlog2-2",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-3184",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libmount1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-3184",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsmartcols1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-3184",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libuuid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-3184",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "login",
+                                                  "installedVersion":  "1:4.16.0-2+really2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-3184",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "mount",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-3184",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "util-linux",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-3184",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "tar",
+                                                  "installedVersion":  "1.35+dfsg-3.1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-5704",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-19499",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-19499",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-84243",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-84243",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "gcc-14-base",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-114691",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libgcc-s1",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-114691",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libstdc++6",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-114691",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-6238",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-6238",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "tar",
+                                                  "installedVersion":  "1.35+dfsg-3.1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2005-2541",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-80489",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-80489",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-77117",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-77117",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libpam-modules",
+                                                  "installedVersion":  "1.7.0-5",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-54411",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libpam-modules-bin",
+                                                  "installedVersion":  "1.7.0-5",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-54411",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libpam-runtime",
+                                                  "installedVersion":  "1.7.0-5",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-54411",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libpam0g",
+                                                  "installedVersion":  "1.7.0-5",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-54411",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-5435",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-5435",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "gcc-14-base",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-115455",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libgcc-s1",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-115455",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libstdc++6",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-115455",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "bsdutils",
+                                                  "installedVersion":  "1:2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-76642",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libblkid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-76642",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "liblastlog2-2",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-76642",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libmount1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-76642",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libsmartcols1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-76642",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libuuid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-76642",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "login",
+                                                  "installedVersion":  "1:4.16.0-2+really2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-76642",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "mount",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-76642",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "util-linux",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-76642",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2019-1010022",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2019-1010022",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-8674",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-8674",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2019-1010024",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2019-1010024",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2019-1010023",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2019-1010023",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "bsdutils",
+                                                  "installedVersion":  "1:2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78408",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libblkid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78408",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "liblastlog2-2",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78408",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libmount1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78408",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libsmartcols1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78408",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libuuid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78408",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "login",
+                                                  "installedVersion":  "1:4.16.0-2+really2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78408",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "mount",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78408",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "util-linux",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78408",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-119374",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-119379",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "login.defs",
+                                                  "installedVersion":  "1:4.17.4-2",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2024-56433",
+                                                  "severity":  "Low"
+                                              },
+                                              {
+                                                  "package":  "passwd",
+                                                  "installedVersion":  "1:4.17.4-2",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2024-56433",
+                                                  "severity":  "Low"
+                                              },
+                                              {
+                                                  "package":  "bsdutils",
+                                                  "installedVersion":  "1:2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78409",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libblkid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78409",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "liblastlog2-2",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78409",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libmount1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78409",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libsmartcols1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78409",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libuuid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78409",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "login",
+                                                  "installedVersion":  "1:4.16.0-2+really2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78409",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "mount",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78409",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "util-linux",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78409",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2010-4756",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2010-4756",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "zlib1g",
+                                                  "installedVersion":  "1:1.3.dfsg+really1.3.1-1+b1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-27171",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-6791",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-6791",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "bsdutils",
+                                                  "installedVersion":  "1:2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78410",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libblkid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78410",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "liblastlog2-2",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78410",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libmount1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78410",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libsmartcols1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78410",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libuuid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78410",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "login",
+                                                  "installedVersion":  "1:4.16.0-2+really2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78410",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "mount",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78410",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "util-linux",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78410",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2019-1010025",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2019-1010025",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2019-9192",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2019-9192",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-19542",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-19542",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-119371",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libacl1",
+                                                  "installedVersion":  "2.3.2-2+b1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-54369",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-89092",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-89092",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-119373",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-119375",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libncursesw6",
+                                                  "installedVersion":  "6.5+20250216-2",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2025-6141",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libtinfo6",
+                                                  "installedVersion":  "6.5+20250216-2",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2025-6141",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "ncurses-base",
+                                                  "installedVersion":  "6.5+20250216-2",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2025-6141",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "ncurses-bin",
+                                                  "installedVersion":  "6.5+20250216-2",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2025-6141",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-119378",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-97399",
+                                                  "severity":  "Low"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-97399",
+                                                  "severity":  "Low"
+                                              },
+                                              {
+                                                  "package":  "perl-base",
+                                                  "installedVersion":  "5.40.1-6+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-15534",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsystemd0",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-15059",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libudev1",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-15059",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-50812",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-50813",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libattr1",
+                                                  "installedVersion":  "1:2.5.2-3",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-54371",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-119376",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2021-45346",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-18374",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-18374",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-119372",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "tar",
+                                                  "installedVersion":  "1.35+dfsg-3.1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-18508",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-119591",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libacl1",
+                                                  "installedVersion":  "2.3.2-2+b1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-54370",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libbz2-1.0",
+                                                  "installedVersion":  "1.0.8-6",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-42250",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "gcc-14-base",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-114690",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libgcc-s1",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-114690",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libstdc++6",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-114690",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "apt",
+                                                  "installedVersion":  "3.0.3",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2011-3374",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libapt-pkg7.0",
+                                                  "installedVersion":  "3.0.3",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2011-3374",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-86805",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-86805",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsystemd0",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-40228",
+                                                  "severity":  "Low"
+                                              },
+                                              {
+                                                  "package":  "libudev1",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-40228",
+                                                  "severity":  "Low"
+                                              },
+                                              {
+                                                  "package":  "login.defs",
+                                                  "installedVersion":  "1:4.17.4-2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2007-5686",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "passwd",
+                                                  "installedVersion":  "1:4.17.4-2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2007-5686",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-95818",
+                                                  "severity":  "Low"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-95818",
+                                                  "severity":  "Low"
+                                              },
+                                              {
+                                                  "package":  "tar",
+                                                  "installedVersion":  "1.35+dfsg-3.1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-18477",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsystemd0",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-16742",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libudev1",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-16742",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-119377",
+                                                  "severity":  "Low"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-6368",
+                                                  "severity":  "Low"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-6368",
+                                                  "severity":  "Low"
+                                              },
+                                              {
+                                                  "package":  "perl-base",
+                                                  "installedVersion":  "5.40.1-6+deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2011-4116",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libsystemd0",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2013-4392",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libudev1",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2013-4392",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2025-70873",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "bsdutils",
+                                                  "installedVersion":  "1:2.41.5-0+deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2022-0563",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libblkid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2022-0563",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "liblastlog2-2",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2022-0563",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libmount1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2022-0563",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libsmartcols1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2022-0563",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libuuid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2022-0563",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "login",
+                                                  "installedVersion":  "1:4.16.0-2+really2.41.5-0+deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2022-0563",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "mount",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2022-0563",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "util-linux",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2022-0563",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libsystemd0",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2023-31439",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libudev1",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2023-31439",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "coreutils",
+                                                  "installedVersion":  "9.7-3",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2017-18018",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libsystemd0",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2023-31437",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libudev1",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2023-31437",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "diffutils",
+                                                  "installedVersion":  "1:3.10-4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-53910",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libsystemd0",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2023-31438",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libudev1",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2023-31438",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "coreutils",
+                                                  "installedVersion":  "9.7-3",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2025-5278",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "coreutils",
+                                                  "installedVersion":  "9.7-3",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-56392",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "coreutils",
+                                                  "installedVersion":  "9.7-3",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-56391",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "dash",
+                                                  "installedVersion":  "0.5.12-12",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-102474",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "dash",
+                                                  "installedVersion":  "0.5.12-12",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-102473",
+                                                  "severity":  "Negligible"
+                                              }
+                                          ]
+                   },
+                   {
+                       "image":  "agentflow-frontend:ci",
+                       "digest":  "sha256:331fed84e05b1170603d4d7ac398d9555d0fa3f0ec155a53daddfba2a1b66a77",
+                       "severitySummary":  [
+                                               {
+                                                   "severity":  "Critical",
+                                                   "uniqueCves":  0
+                                               },
+                                               {
+                                                   "severity":  "High",
+                                                   "uniqueCves":  18
+                                               },
+                                               {
+                                                   "severity":  "Medium",
+                                                   "uniqueCves":  32
+                                               },
+                                               {
+                                                   "severity":  "Low",
+                                                   "uniqueCves":  6
+                                               },
+                                               {
+                                                   "severity":  "Negligible",
+                                                   "uniqueCves":  25
+                                               }
+                                           ],
+                       "packageMatches":  [
+                                              {
+                                                  "package":  "perl-base",
+                                                  "installedVersion":  "5.40.1-6+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-82560",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "perl-base",
+                                                  "installedVersion":  "5.40.1-6+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-9538",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "zlib1g",
+                                                  "installedVersion":  "1:1.3.dfsg+really1.3.1-1+b1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-85091",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libtinfo6",
+                                                  "installedVersion":  "6.5+20250216-2",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2025-69720",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "ncurses-base",
+                                                  "installedVersion":  "6.5+20250216-2",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2025-69720",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "ncurses-bin",
+                                                  "installedVersion":  "6.5+20250216-2",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2025-69720",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "gcc-14-base",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-95619",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libgcc-s1",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-95619",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libstdc++6",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-95619",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2018-20796",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2018-20796",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "gcc-14-base",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-102010",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libgcc-s1",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-102010",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libstdc++6",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-102010",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "bsdutils",
+                                                  "installedVersion":  "1:2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-3184",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libblkid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-3184",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "liblastlog2-2",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-3184",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libmount1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-3184",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsmartcols1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-3184",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libuuid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-3184",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "login",
+                                                  "installedVersion":  "1:4.16.0-2+really2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-3184",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "mount",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-3184",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "util-linux",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-3184",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "tar",
+                                                  "installedVersion":  "1.35+dfsg-3.1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-5704",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-19499",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-19499",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-84243",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-84243",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "gcc-14-base",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-114691",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libgcc-s1",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-114691",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libstdc++6",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-114691",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-6238",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-6238",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "tar",
+                                                  "installedVersion":  "1.35+dfsg-3.1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2005-2541",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-80489",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-80489",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-77117",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-77117",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libpam-modules",
+                                                  "installedVersion":  "1.7.0-5",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-54411",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libpam-modules-bin",
+                                                  "installedVersion":  "1.7.0-5",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-54411",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libpam-runtime",
+                                                  "installedVersion":  "1.7.0-5",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-54411",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libpam0g",
+                                                  "installedVersion":  "1.7.0-5",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-54411",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-5435",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-5435",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "gcc-14-base",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-115455",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libgcc-s1",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-115455",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libstdc++6",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-115455",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "bsdutils",
+                                                  "installedVersion":  "1:2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-76642",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libblkid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-76642",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "liblastlog2-2",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-76642",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libmount1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-76642",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libsmartcols1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-76642",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libuuid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-76642",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "login",
+                                                  "installedVersion":  "1:4.16.0-2+really2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-76642",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "mount",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-76642",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "util-linux",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-76642",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2019-1010022",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2019-1010022",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-8674",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-8674",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2019-1010024",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2019-1010024",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2019-1010023",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2019-1010023",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "bsdutils",
+                                                  "installedVersion":  "1:2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78408",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libblkid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78408",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "liblastlog2-2",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78408",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libmount1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78408",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libsmartcols1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78408",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libuuid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78408",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "login",
+                                                  "installedVersion":  "1:4.16.0-2+really2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78408",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "mount",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78408",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "util-linux",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78408",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-119374",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-119379",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "login.defs",
+                                                  "installedVersion":  "1:4.17.4-2",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2024-56433",
+                                                  "severity":  "Low"
+                                              },
+                                              {
+                                                  "package":  "passwd",
+                                                  "installedVersion":  "1:4.17.4-2",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2024-56433",
+                                                  "severity":  "Low"
+                                              },
+                                              {
+                                                  "package":  "bsdutils",
+                                                  "installedVersion":  "1:2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78409",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libblkid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78409",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "liblastlog2-2",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78409",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libmount1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78409",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libsmartcols1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78409",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libuuid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78409",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "login",
+                                                  "installedVersion":  "1:4.16.0-2+really2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78409",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "mount",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78409",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "util-linux",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78409",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2010-4756",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2010-4756",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "zlib1g",
+                                                  "installedVersion":  "1:1.3.dfsg+really1.3.1-1+b1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-27171",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-6791",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-6791",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "bsdutils",
+                                                  "installedVersion":  "1:2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78410",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libblkid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78410",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "liblastlog2-2",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78410",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libmount1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78410",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libsmartcols1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78410",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libuuid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78410",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "login",
+                                                  "installedVersion":  "1:4.16.0-2+really2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78410",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "mount",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78410",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "util-linux",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-78410",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2019-1010025",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2019-1010025",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2019-9192",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2019-9192",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-19542",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-19542",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-119371",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libacl1",
+                                                  "installedVersion":  "2.3.2-2+b1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-54369",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-89092",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-89092",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-119373",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-119375",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libtinfo6",
+                                                  "installedVersion":  "6.5+20250216-2",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2025-6141",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "ncurses-base",
+                                                  "installedVersion":  "6.5+20250216-2",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2025-6141",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "ncurses-bin",
+                                                  "installedVersion":  "6.5+20250216-2",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2025-6141",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-119378",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-97399",
+                                                  "severity":  "Low"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-97399",
+                                                  "severity":  "Low"
+                                              },
+                                              {
+                                                  "package":  "perl-base",
+                                                  "installedVersion":  "5.40.1-6+deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-15534",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsystemd0",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-15059",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libudev1",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-15059",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-50812",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-50813",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libattr1",
+                                                  "installedVersion":  "1:2.5.2-3",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-54371",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-119376",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2021-45346",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-18374",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-18374",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-119372",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "tar",
+                                                  "installedVersion":  "1.35+dfsg-3.1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-18508",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-119591",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libacl1",
+                                                  "installedVersion":  "2.3.2-2+b1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-54370",
+                                                  "severity":  "High"
+                                              },
+                                              {
+                                                  "package":  "libbz2-1.0",
+                                                  "installedVersion":  "1.0.8-6",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-42250",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "gcc-14-base",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-114690",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libgcc-s1",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-114690",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libstdc++6",
+                                                  "installedVersion":  "14.2.0-19",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-114690",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "apt",
+                                                  "installedVersion":  "3.0.3",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2011-3374",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libapt-pkg7.0",
+                                                  "installedVersion":  "3.0.3",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2011-3374",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-86805",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-86805",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsystemd0",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-40228",
+                                                  "severity":  "Low"
+                                              },
+                                              {
+                                                  "package":  "libudev1",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-40228",
+                                                  "severity":  "Low"
+                                              },
+                                              {
+                                                  "package":  "login.defs",
+                                                  "installedVersion":  "1:4.17.4-2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2007-5686",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "passwd",
+                                                  "installedVersion":  "1:4.17.4-2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2007-5686",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-95818",
+                                                  "severity":  "Low"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-95818",
+                                                  "severity":  "Low"
+                                              },
+                                              {
+                                                  "package":  "tar",
+                                                  "installedVersion":  "1.35+dfsg-3.1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-18477",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsystemd0",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-16742",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libudev1",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-16742",
+                                                  "severity":  "Medium"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-119377",
+                                                  "severity":  "Low"
+                                              },
+                                              {
+                                                  "package":  "libc-bin",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-6368",
+                                                  "severity":  "Low"
+                                              },
+                                              {
+                                                  "package":  "libc6",
+                                                  "installedVersion":  "2.41-12+deb13u4",
+                                                  "fixReported":  "(won\u0027t fix)",
+                                                  "cve":  "CVE-2026-6368",
+                                                  "severity":  "Low"
+                                              },
+                                              {
+                                                  "package":  "perl-base",
+                                                  "installedVersion":  "5.40.1-6+deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2011-4116",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libsystemd0",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2013-4392",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libudev1",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2013-4392",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libsqlite3-0",
+                                                  "installedVersion":  "3.46.1-7+deb13u2",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2025-70873",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "bsdutils",
+                                                  "installedVersion":  "1:2.41.5-0+deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2022-0563",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libblkid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2022-0563",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "liblastlog2-2",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2022-0563",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libmount1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2022-0563",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libsmartcols1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2022-0563",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libuuid1",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2022-0563",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "login",
+                                                  "installedVersion":  "1:4.16.0-2+really2.41.5-0+deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2022-0563",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "mount",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2022-0563",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "util-linux",
+                                                  "installedVersion":  "2.41.5-0+deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2022-0563",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libsystemd0",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2023-31439",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libudev1",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2023-31439",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "coreutils",
+                                                  "installedVersion":  "9.7-3",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2017-18018",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libsystemd0",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2023-31437",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libudev1",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2023-31437",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "diffutils",
+                                                  "installedVersion":  "1:3.10-4",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-53910",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libsystemd0",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2023-31438",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "libudev1",
+                                                  "installedVersion":  "257.13-1~deb13u1",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2023-31438",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "coreutils",
+                                                  "installedVersion":  "9.7-3",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2025-5278",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "coreutils",
+                                                  "installedVersion":  "9.7-3",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-56392",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "coreutils",
+                                                  "installedVersion":  "9.7-3",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-56391",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "dash",
+                                                  "installedVersion":  "0.5.12-12",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-102474",
+                                                  "severity":  "Negligible"
+                                              },
+                                              {
+                                                  "package":  "dash",
+                                                  "installedVersion":  "0.5.12-12",
+                                                  "fixReported":  null,
+                                                  "cve":  "CVE-2026-102473",
+                                                  "severity":  "Negligible"
+                                              }
+                                          ]
+                   }
+               ]
+}

@@ -1,0 +1,13 @@
+# INACTIVE. Operator-approved role rollout only; combine with production + accounts.
+# Never use an operator/migrator URL for backend. Protect environment values and logs.
+services:
+  backend:
+    # Shared env_file would otherwise deliver migration/operator secrets to runtime.
+    # Only the explicit production/accounts environment mapping is inherited.
+    env_file: !reset []
+    environment:
+      DATABASE_URL: ${V2_RUNTIME_DATABASE_URL:?Set the separately provisioned runtime URL}
+  migrate:
+    env_file: !reset []
+    environment:
+      DATABASE_URL: ${V2_MIGRATION_DATABASE_URL:?Set the separately provisioned migration URL}

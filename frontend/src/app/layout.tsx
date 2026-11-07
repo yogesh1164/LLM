@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./neon-theme.css";
 
 export const metadata: Metadata = {
   title: "AgentFlow AI | Workspace",

@@ -1,5 +1,73 @@
 # Private deployment preparation
 
+Current V2 candidate: **NOT READY**, engineering estimate **95%**. Isolated
+database role separation, encrypted synthetic recovery and combined account/durable
+rehearsal are implemented. The zlib HIGH remains in each app image; no real off-host
+destination or production cutover was configured. Use the current
+[release evidence](docs/V2_RELEASE_EVIDENCE.md),
+[combined operator runbook](docs/V2_COMBINED_RELEASE_RUNBOOK.md),
+[database roles](docs/V2_DATABASE_ROLES.md),
+[encrypted backup/restore](docs/V2_ENCRYPTED_BACKUP_RUNBOOK.md) and
+[security disposition](docs/V2_SECURITY_DISPOSITION.md).
+All examples below describing the V1 deployment are historical operational evidence.
+New role overlays/tooling are inactive; no production change is authorized here.
+
+## V2 branch boundary
+
+Update 2026-10-24: account sessions, ownership enforcement, migration 0007 and
+cookie-authenticated UI are now implemented for isolated verification. See
+[account cutover preparation](docs/V2_ACCOUNTS_ROLLOUT.md). Neither accounts nor
+durable execution is activated on the existing deployment. The historical V2
+foundation description below predates these changes. Do not use `upgrade head`
+for a durable-only rollout; explicitly select 0006 or separately review 0007.
+Current review Dockerfiles use pinned Trixie bases; image security remains gated.
+The inactive combined overlay is `deploy/compose.accounts.yml`. Final local
+account/durable browser and PostgreSQL recovery tests pass; latest image scans
+retain one high zlib finding each. See the current verification/checkpoint sections
+before using historical commands. The operator procedure is prepared, not executed.
+
+The verification below describes the released V1 private deployment. The V2 feature
+branch adds offline-tested worker admission, cancellation persistence, JSON
+telemetry, inactive account primitives, frontend safety and CI. It has not been
+cut over to production. See [V2 security audit](docs/V2_SECURITY_AUDIT.md),
+[migration design](docs/V2_ARCHITECTURE.md) and [V2 verification](docs/V2_VERIFICATION.md).
+Do not enable multi-user access or run ownership migrations from this branch.
+The legacy-data decision must be approved before production ownership assignment.
+
+`PROVIDER_MAX_CONCURRENCY` defaults to 4 (range 1–16) per backend process.
+It bounds admitted synchronous Gemini work, including calls whose waiting request
+timed out/cancelled. Slots return only when the actual SDK operation exits; new
+calls fail with a busy response instead of joining an unbounded queue. Keep one
+worker/replica. This does not stop billable upstream work or remove the existing
+Gemini cancellation XFAIL. OpenAI's optional async SDK is outside this guard.
+
+Production JSON logs intentionally omit free-form messages, headers, queries,
+prompts and exception bodies. Use generated `X-Request-ID`, execution UUIDs,
+status/category and numeric duration/token metrics for investigation. API results
+are `Cache-Control: no-store`. Gemini currency estimates remain unavailable;
+configured token rates are not verified provider billing.
+
+CI runs with read-only repository permission on hosted runners and placeholder
+configuration. It never migrates, publishes images or deploys. Required-check
+branch protection is an operator GitHub setting; it is not installed by YAML.
+Dependency/advisory checks can fail later as new advisories are published. Review
+and repair failures; do not add blanket ignores or `continue-on-error`.
+
+Optional `deploy/compose.limits.yml` caps only application services. Validate and
+load-test it on an isolated rehearsal before opting in; memory limits may cause
+OOM termination, so they are not automatically applied to the running stack:
+
+```powershell
+docker --context desktop-linux compose -p agentflow-private -f compose.production.yml -f deploy/compose.limits.yml --env-file .env.production config --quiet
+if ($LASTEXITCODE -ne 0) { throw 'Compose limits validation failed' }
+```
+
+Do not change existing env files, database roles, certificates, volumes or the
+private binding during a code review. Runtime/migration role separation and
+encrypted off-host backup scheduling require an explicit operational plan.
+
+## V1 verified deployment record
+
 Status: private containers, HTTPS, authentication, PostgreSQL recovery, restart
 persistence and the live five-stage Gemini workflow have been verified locally.
 The initial credential rejection was resolved by recreating only the backend
@@ -477,3 +545,9 @@ modified and ten new candidate files passed review and configured-secret scans.
 5. Refresh and confirm history remains available; check the browser console for
    errors. Remember the token is JavaScript-readable sessionStorage, scoped to
    the browser tab. Keep the retained QA agents/workflow disabled.
+## V2 durable execution approval gate
+
+The complete private opt-in procedure is in [V2_DURABLE_ROLLOUT.md](docs/V2_DURABLE_ROLLOUT.md).
+Its new overlays are inactive by default; do not apply 0006 or enable durable mode
+on either existing database without explicit operator approval. Isolated integration
+and migration evidence is in [V2_VERIFICATION.md](docs/V2_VERIFICATION.md).

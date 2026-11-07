@@ -7,9 +7,12 @@ import time
 from collections import defaultdict, deque
 
 from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from app import account_routes, accounts, durable_execution
 from app.config import settings
 from app.custom_agents import router as custom_agents_router
 from app.custom_workflows import router as custom_workflows_router
@@ -22,7 +25,11 @@ from app.database import (
     get_task,
     update_task,
 )
+from app.observability import RequestTelemetry, configure_production_logging
+from app.ownership import current_principal
+from app.provider_capacity import ProviderBusyError
 from app.providers import ProviderConfigurationError, validate_provider
+from app.request_limits import RequestBodyLimit
 from app.schemas import (
     DashboardResponse,
     ExecutionResponse,
@@ -33,15 +40,27 @@ from app.schemas import (
 from app.workflow import StageTimeoutError, run_workflow
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+if settings.app_env == "production":
+    configure_production_logging()
 logger = logging.getLogger("agentflow.api")
 app = FastAPI(
     title="AgentFlow AI API", version="0.2.0",
+    lifespan=durable_execution.lifespan,
     docs_url=None if settings.app_env == "production" else "/docs",
     redoc_url=None if settings.app_env == "production" else "/redoc",
     openapi_url=None if settings.app_env == "production" else "/openapi.json",
 )
 app.include_router(custom_agents_router)
 app.include_router(custom_workflows_router)
+app.include_router(durable_execution.router)
+app.include_router(account_routes.router)
+
+
+@app.exception_handler(RequestValidationError)
+async def safe_validation_error(request, exc):
+    if request.url.path.startswith("/api/auth/"):
+        return JSONResponse({"detail": "Invalid authentication request"}, status_code=422)
+    return await request_validation_exception_handler(request, exc)
 _rate_events: dict[str, deque[float]] = defaultdict(deque)
 _rate_limit_lock = threading.Lock()
 
@@ -54,7 +73,8 @@ async def _check_rate_limit(request: Request) -> None:
         while events and events[0] < now - 60:
             events.popleft()
         if len(events) >= settings.rate_limit_per_minute:
-            raise HTTPException(status_code=429, detail="Too many workflow requests; try again shortly")
+            raise HTTPException(status_code=429, detail="Too many workflow requests; try again shortly",
+                                headers={"Retry-After": "60"})
         events.append(now)
         # Bound storage for clients that have not returned within the active window.
         if len(_rate_events) > 10_000:
@@ -67,6 +87,38 @@ async def _check_rate_limit(request: Request) -> None:
 
 @app.middleware("http")
 async def require_api_token(request: Request, call_next):
+    if request.url.path == "/api/auth/mode":
+        return await call_next(request)
+    if settings.auth_mode == "accounts" and request.url.path.startswith("/api/"):
+        if request.url.path in {"/api/health", "/api/ready", "/api/auth/login"}:
+            return await call_next(request)
+        token = None
+        try:
+            from starlette.concurrency import run_in_threadpool
+            principal = await run_in_threadpool(accounts.authenticate,
+                request.cookies.get(account_routes.cookie_name()),
+                origin=request.headers.get("origin"), csrf=request.headers.get("x-csrf-token"),
+                allowed_origins=set(settings.allowed_frontend_origins),
+                mutation=request.method not in {"GET", "HEAD", "OPTIONS"})
+            token = current_principal.set(principal)
+            if request.method == "POST" and (
+                request.url.path.startswith(("/api/agents/", "/api/custom-workflows/"))
+                and request.url.path.endswith("/execute")
+            ):
+                await _check_rate_limit(request)
+            return await call_next(request)
+        except HTTPException as exc:
+            return JSONResponse({"detail": exc.detail}, status_code=exc.status_code, headers=exc.headers)
+        except Exception as exc:
+            if settings.app_env != "production":
+                raise
+            logger.error("Request failed (%s)", type(exc).__name__)
+            return JSONResponse({"detail": "Internal server error"}, status_code=500)
+        finally:
+            if token is not None:
+                current_principal.reset(token)
+    if request.url.path.startswith("/api/auth/"):
+        return JSONResponse({"detail": "Not found"}, status_code=404)
     if request.url.path.startswith("/api/") and request.url.path not in {
         "/api/health", "/api/ready",
     }:
@@ -75,7 +127,9 @@ async def require_api_token(request: Request, call_next):
             return JSONResponse({"detail": "API access token is not configured"}, status_code=503)
         provided = request.headers.get("authorization", "")
         expected = configured.get_secret_value()
-        if not provided.startswith("Bearer ") or not hmac.compare_digest(provided[7:], expected):
+        if not provided.startswith("Bearer ") or not hmac.compare_digest(
+            provided[7:].encode("utf-8"), expected.encode("utf-8")
+        ):
             return JSONResponse({"detail": "Authentication required"}, status_code=401,
                                 headers={"WWW-Authenticate": "Bearer"})
     if request.method == "POST" and (
@@ -87,7 +141,8 @@ async def require_api_token(request: Request, call_next):
         try:
             await _check_rate_limit(request)
         except HTTPException as exc:
-            return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
+            return JSONResponse({"detail": exc.detail}, status_code=exc.status_code,
+                                headers=exc.headers)
     try:
         return await call_next(request)
     except Exception as exc:
@@ -105,6 +160,8 @@ def _require_ai() -> None:
 
 
 def _safe_provider_error(exc: Exception) -> tuple[int, str]:
+    if isinstance(exc, ProviderBusyError):
+        return 503, "AI workers are busy; try again shortly"
     exceptions = [exc]
     cause = exc.__cause__ or exc.__context__ or getattr(exc, "original_exception", None)
     while cause is not None and cause not in exceptions:
@@ -198,10 +255,13 @@ async def _execute(task: str) -> dict:
         status, message = _safe_provider_error(exc)
         logger.warning("Workflow request failed (%s)", type(exc).__name__)
         update_task(task_id, status="failed", error=message)
-        raise HTTPException(status_code=status, detail=message) from None
+        raise HTTPException(status_code=status, detail=message,
+                            headers={"Retry-After": "5"} if isinstance(exc, ProviderBusyError)
+                            else None) from None
 
 
 @app.post("/api/workflows/collaborate", response_model=WorkflowResponse)
+@durable_execution.execution("fixed_collaborate")
 async def collaborate(request: WorkflowRequest, http_request: Request) -> WorkflowResponse:
     await _check_rate_limit(http_request)
     _require_ai()
@@ -210,6 +270,7 @@ async def collaborate(request: WorkflowRequest, http_request: Request) -> Workfl
 
 
 @app.post("/api/workflows/execute", response_model=ExecutionResponse)
+@durable_execution.execution("fixed_execute")
 async def execute_workflow(request: WorkflowRequest, http_request: Request) -> ExecutionResponse:
     await _check_rate_limit(http_request)
     _require_ai()
@@ -219,6 +280,7 @@ async def execute_workflow(request: WorkflowRequest, http_request: Request) -> E
 
 
 @app.post("/api/workflows/stream")
+@durable_execution.execution("fixed_stream")
 async def stream_workflow(request: WorkflowRequest, http_request: Request) -> StreamingResponse:
     await _check_rate_limit(http_request)
     _require_ai()
@@ -262,6 +324,9 @@ async def stream_workflow(request: WorkflowRequest, http_request: Request) -> St
                 update_task(task_id, status="failed", error="Workflow cancelled")
                 await send({"type": "error", "detail": "Workflow cancelled", "status": "cancelled"})
                 raise
+            except durable_execution.LeaseLost:
+                await send({"type": "error", "detail": "Execution ownership lost; inspect execution record",
+                            "status": "interrupted"})
             except StageTimeoutError as exc:
                 message = str(exc)
                 update_task(task_id, status="failed", error=message)
@@ -321,9 +386,11 @@ async def remove_task(task_id: str) -> Response:
 # Wrap the complete ASGI app so CORS headers are also present on unhandled 500 responses.
 # This keeps browser diagnostics useful while still returning the real server error.
 app = CORSMiddleware(
-    app=app,
+    app=RequestBodyLimit(app, lambda: settings.max_request_body_bytes),
     allow_origins=settings.allowed_frontend_origins,
-    allow_credentials=False,
+    allow_credentials=settings.auth_mode == "accounts",
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
-    allow_headers=["Content-Type", "Authorization"],
+    allow_headers=["Content-Type", "Authorization", "Idempotency-Key", "X-CSRF-Token", "X-AgentFlow-Login"],
+    expose_headers=["X-Request-ID", "X-Execution-ID", "Location"],
 )
+app = RequestTelemetry(app)

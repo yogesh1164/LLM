@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     app_env: Literal["development", "production"] = "development"
     ai_provider: Literal["gemini", "openai"] = "gemini"
     api_access_token: SecretStr | None = None
+    auth_mode: Literal["legacy_bearer", "accounts"] = "legacy_bearer"
     gemini_api_key: SecretStr | None = None
     gemini_model: str = "gemini-3.8-flash"
     # Search grounding may incur usage charges; require an explicit opt-in.
@@ -23,6 +24,7 @@ class Settings(BaseSettings):
     workflow_timeout_seconds: int = Field(default=600, ge=10, le=1800)
     agent_timeout_seconds: int = Field(default=90, ge=5, le=300)
     provider_retry_attempts: int = Field(default=2, ge=0, le=5)
+    provider_max_concurrency: int = Field(default=4, ge=1, le=16)
     provider_retry_base_delay_seconds: float = Field(default=0.5, ge=0.05, le=10)
     provider_retry_max_delay_seconds: float = Field(default=4, ge=0.1, le=30)
     orchestrator_timeout_seconds: int | None = Field(default=None, ge=5, le=600)
@@ -40,6 +42,12 @@ class Settings(BaseSettings):
     )
     task_retention_days: int = Field(default=0, ge=0, le=3650)
     rate_limit_per_minute: int = Field(default=10, ge=1, le=600)
+    max_request_body_bytes: int = Field(default=262_144, ge=1024, le=1_048_576)
+    # Explicit opt-in only after the additive migration is approved/applied.
+    durable_execution_enabled: bool = False
+    execution_lease_seconds: int = Field(default=60, ge=10, le=600)
+    execution_heartbeat_seconds: float = Field(default=5, ge=1, le=60)
+    execution_recovery_seconds: float = Field(default=15, ge=1, le=60)
     input_token_cost_per_million: float = Field(default=0.25, ge=0)
     cached_input_token_cost_per_million: float = Field(default=0.025, ge=0)
     output_token_cost_per_million: float = Field(default=2.0, ge=0)
@@ -71,6 +79,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_model_name(self) -> "Settings":
+        if self.execution_heartbeat_seconds * 3 >= self.execution_lease_seconds:
+            raise ValueError("Execution heartbeat must be less than one third of the lease")
         model = self.active_model.strip()
         if not model or any(char.isspace() for char in model):
             raise ValueError("The configured AI model name is invalid")
@@ -91,7 +101,7 @@ class Settings(BaseSettings):
             if self.app_env == "production" and parsed.scheme != "https":
                 raise ValueError("Production CORS origins must use HTTPS")
         if self.app_env == "production":
-            if not self.api_access_token:
+            if self.auth_mode == "legacy_bearer" and not self.api_access_token:
                 raise ValueError("Production requires API_ACCESS_TOKEN")
             if not self.allowed_frontend_origins:
                 raise ValueError("Production requires explicit FRONTEND_ORIGINS")

@@ -1,0 +1,205 @@
+{
+  "database": "agentflow_production_example",
+  "connected_role": "operator_example",
+  "server_version": "160015",
+  "server_address": "192.0.2.10",
+  "database_owner": "legacy_app_example",
+  "database_acl": "{=Tc/legacy_app_example,legacy_app_example=CTc/legacy_app_example}",
+  "schemas": [
+    {
+      "nspname": "public",
+      "owner": "legacy_app_example",
+      "acl": null
+    }
+  ],
+  "memberships": [],
+  "defaults": [],
+  "roles": [
+    {
+      "rolname": "legacy_app_example",
+      "rolsuper": true,
+      "rolcreatedb": false,
+      "rolcreaterole": false,
+      "rolreplication": false,
+      "rolbypassrls": false,
+      "rolcanlogin": true
+    }
+  ],
+  "tables": [
+    {
+      "tablename": "account_audit",
+      "tableowner": "legacy_app_example"
+    },
+    {
+      "tablename": "account_sessions",
+      "tableowner": "legacy_app_example"
+    },
+    {
+      "tablename": "agent_executions",
+      "tableowner": "legacy_app_example"
+    },
+    {
+      "tablename": "alembic_version",
+      "tableowner": "legacy_app_example"
+    },
+    {
+      "tablename": "custom_agent_executions",
+      "tableowner": "legacy_app_example"
+    },
+    {
+      "tablename": "custom_agents",
+      "tableowner": "legacy_app_example"
+    },
+    {
+      "tablename": "custom_workflow_runs",
+      "tableowner": "legacy_app_example"
+    },
+    {
+      "tablename": "custom_workflow_step_runs",
+      "tableowner": "legacy_app_example"
+    },
+    {
+      "tablename": "custom_workflow_steps",
+      "tableowner": "legacy_app_example"
+    },
+    {
+      "tablename": "custom_workflows",
+      "tableowner": "legacy_app_example"
+    },
+    {
+      "tablename": "durable_executions",
+      "tableowner": "legacy_app_example"
+    },
+    {
+      "tablename": "login_buckets",
+      "tableowner": "legacy_app_example"
+    },
+    {
+      "tablename": "ownership_assignments",
+      "tableowner": "legacy_app_example"
+    },
+    {
+      "tablename": "tasks",
+      "tableowner": "legacy_app_example"
+    },
+    {
+      "tablename": "users",
+      "tableowner": "legacy_app_example"
+    }
+  ],
+  "column_acls": [],
+  "objects": [
+    {
+      "schema": "public",
+      "name": "account_audit",
+      "kind": "r",
+      "owner": "legacy_app_example",
+      "acl": null
+    },
+    {
+      "schema": "public",
+      "name": "account_sessions",
+      "kind": "r",
+      "owner": "legacy_app_example",
+      "acl": null
+    },
+    {
+      "schema": "public",
+      "name": "agent_executions",
+      "kind": "r",
+      "owner": "legacy_app_example",
+      "acl": null
+    },
+    {
+      "schema": "public",
+      "name": "alembic_version",
+      "kind": "r",
+      "owner": "legacy_app_example",
+      "acl": null
+    },
+    {
+      "schema": "public",
+      "name": "custom_agent_executions",
+      "kind": "r",
+      "owner": "legacy_app_example",
+      "acl": null
+    },
+    {
+      "schema": "public",
+      "name": "custom_agents",
+      "kind": "r",
+      "owner": "legacy_app_example",
+      "acl": null
+    },
+    {
+      "schema": "public",
+      "name": "custom_workflow_runs",
+      "kind": "r",
+      "owner": "legacy_app_example",
+      "acl": null
+    },
+    {
+      "schema": "public",
+      "name": "custom_workflow_step_runs",
+      "kind": "r",
+      "owner": "legacy_app_example",
+      "acl": null
+    },
+    {
+      "schema": "public",
+      "name": "custom_workflow_steps",
+      "kind": "r",
+      "owner": "legacy_app_example",
+      "acl": null
+    },
+    {
+      "schema": "public",
+      "name": "custom_workflows",
+      "kind": "r",
+      "owner": "legacy_app_example",
+      "acl": null
+    },
+    {
+      "schema": "public",
+      "name": "durable_executions",
+      "kind": "r",
+      "owner": "legacy_app_example",
+      "acl": null
+    },
+    {
+      "schema": "public",
+      "name": "login_buckets",
+      "kind": "r",
+      "owner": "legacy_app_example",
+      "acl": null
+    },
+    {
+      "schema": "public",
+      "name": "ownership_assignments",
+      "kind": "r",
+      "owner": "legacy_app_example",
+      "acl": null
+    },
+    {
+      "schema": "public",
+      "name": "tasks",
+      "kind": "r",
+      "owner": "legacy_app_example",
+      "acl": null
+    },
+    {
+      "schema": "public",
+      "name": "users",
+      "kind": "r",
+      "owner": "legacy_app_example",
+      "acl": null
+    }
+  ],
+  "functions": [],
+  "extensions": [
+    {
+      "name": "plpgsql",
+      "version": "1.0"
+    }
+  ]
+}

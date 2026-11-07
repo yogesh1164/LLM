@@ -136,7 +136,7 @@ export function ResultsPanel({
           <div className="research-sources">
             <h3>Research sources</h3>
             <ul>{output.sources.map((source) => (
-              <li key={source.url}><a href={source.url} target="_blank" rel="noopener noreferrer">{source.title || source.url}</a></li>
+              <li key={source.url}><a href={safeMarkdownUrl(source.url)} target="_blank" rel="noopener noreferrer">{source.title || source.url}</a></li>
             ))}</ul>
           </div>
         ) : null}
@@ -147,6 +147,8 @@ export function ResultsPanel({
 }
 
 const markdownComponents: Components = {
+  // Model-supplied image URLs must not send browser requests to tracking/internal hosts.
+  img: ({ alt }) => <span className="md-image-placeholder">[Image: {alt || "not loaded"}]</span>,
   h1: ({ children }) => <h1 className="md-heading md-h1">{children}</h1>,
   h2: ({ children }) => <h2 className="md-heading md-h2">{children}</h2>,
   h3: ({ children }) => <h3 className="md-heading md-h3">{children}</h3>,
